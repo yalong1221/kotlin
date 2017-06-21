@@ -20,8 +20,10 @@ import com.intellij.testFramework.UsefulTestCase
 import com.intellij.util.containers.HashMap
 import com.intellij.util.containers.StringInterner
 import org.jetbrains.kotlin.TestWithWorkingDir
+import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.cli.js.K2JSCompiler
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.compilerRunner.*
 import org.jetbrains.kotlin.config.IncrementalCompilation
@@ -36,12 +38,117 @@ import org.jetbrains.kotlin.incremental.testingUtils.TouchPolicy
 import org.jetbrains.kotlin.incremental.testingUtils.copyTestSources
 import org.jetbrains.kotlin.incremental.testingUtils.getModificationsToPerform
 import org.jetbrains.kotlin.incremental.utils.TestMessageCollector
+import org.jetbrains.kotlin.js.incremental.IncrementalDataProvider
+import org.jetbrains.kotlin.js.incremental.IncrementalResultsConsumer
+import org.jetbrains.kotlin.js.incremental.IncrementalResultsConsumerImpl
 import org.jetbrains.kotlin.preloading.ClassCondition
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.utils.PathUtil
 import java.io.*
 import java.util.*
 
+abstract class AbstractJvmLookupTrackerTest : AbstractLookupTrackerTest() {
+    override fun runCompiler(filesToCompile: Iterable<File>, env: JpsCompilerEnvironment): Any? {
+        val moduleFile = makeModuleFile(
+                name = "test",
+                isTest = true,
+                outputDir = outDir,
+                sourcesToCompile = filesToCompile.toList(),
+                javaSourceRoots = listOf(srcDir),
+                classpath = listOf(outDir).filter { it.exists() },
+                friendDirs = emptyList()
+        )
+
+        val args = K2JVMCompilerArguments().apply {
+            buildFile = moduleFile.canonicalPath
+            reportOutputFiles = true
+        }
+        val argsArray = ArgumentUtils.convertArgumentsToStringList(args).toTypedArray()
+
+        try {
+            val stream = ByteArrayOutputStream()
+            val out = PrintStream(stream)
+            val exitCode = CompilerRunnerUtil.invokeExecMethod(K2JVMCompiler::class.java.name, argsArray, env, out)
+            val reader = BufferedReader(StringReader(stream.toString()))
+            CompilerOutputParser.parseCompilerMessagesFromReader(env.messageCollector, reader, env.outputItemsCollector)
+
+            return exitCode
+        }
+        finally {
+            moduleFile.delete()
+        }
+    }
+}
+
+abstract class AbstractJsLookupTrackerTest : AbstractLookupTrackerTest() {
+    private lateinit var incrementalDataDir: File
+    private lateinit var binaryTreesDir: File
+    private lateinit var packagesMetadataDir: File
+    private lateinit var headerMetadataFile: File
+
+    override fun setUp() {
+        super.setUp()
+        incrementalDataDir = File(workingDir, "incremental-data")
+        binaryTreesDir = File(incrementalDataDir, "binary-trees")
+        packagesMetadataDir = File(incrementalDataDir, "packages-metadata")
+        headerMetadataFile = File(incrementalDataDir, "header.metadata")
+    }
+
+    override fun Services.Builder.registerAdditionalServices() {
+        if (incrementalDataDir.exists()) {
+            register(IncrementalDataProvider::class.java, object : IncrementalDataProvider {
+                override val headerMetadata: ByteArray
+                    get() = headerMetadataFile.readBytes()
+                override val packagePartsMetadata: List<ByteArray>
+                    get() = packagesMetadataDir.walk().filter { it.isFile }.map { it.readBytes() }.toList()
+                override val binaryTrees: List<ByteArray>
+                    get() = binaryTreesDir.walk().filter { it.isFile }.map { it.readBytes() }.toList()
+            })
+        }
+
+        register(IncrementalResultsConsumer::class.java, IncrementalResultsConsumerImpl())
+    }
+
+    override fun runCompiler(filesToCompile: Iterable<File>, env: JpsCompilerEnvironment): Any? {
+        val args = K2JSCompilerArguments().apply {
+            outputFile = File(outDir, "out.js").canonicalPath
+            reportOutputFiles = true
+            freeArgs.addAll(filesToCompile.map { it.canonicalPath })
+        }
+        val argsArray = ArgumentUtils.convertArgumentsToStringList(args).toTypedArray()
+
+        val stream = ByteArrayOutputStream()
+        val out = PrintStream(stream)
+        val exitCode = CompilerRunnerUtil.invokeExecMethod(K2JSCompiler::class.java.name, argsArray, env, out)
+        val reader = BufferedReader(StringReader(stream.toString()))
+        CompilerOutputParser.parseCompilerMessagesFromReader(env.messageCollector, reader, env.outputItemsCollector)
+
+        val incrementalResults = env.services.get(IncrementalResultsConsumer::class.java) as IncrementalResultsConsumerImpl
+        incrementalResults.apply {
+            packageParts.forEach {
+                val relativePath = it.sourceFile.toRelativeString(srcDir)
+                val treeFile = File(binaryTreesDir, relativePath + ".ast").apply { parentFile.mkdirs() }
+                treeFile.writeBytes(it.binaryAst)
+
+                val partProtoFile = File(packagesMetadataDir, relativePath + ".proto").apply { parentFile.mkdirs() }
+                partProtoFile.writeBytes(it.proto)
+
+                env.outputItemsCollector.outputs.apply {
+                    val sources = listOf(it.sourceFile)
+                    add(SimpleOutputItem(sources, treeFile))
+                    add(SimpleOutputItem(sources, partProtoFile))
+                }
+            }
+
+            headerMetadata?.let {
+                headerMetadataFile.parentFile.mkdirs()
+                headerMetadataFile.writeBytes(it)
+            }
+        }
+
+        return exitCode
+    }
+}
 
 abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
     private val DECLARATION_KEYWORDS = listOf("interface", "class", "enum class", "object", "fun", "operator fun", "val", "var")
@@ -72,6 +179,8 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
         IncrementalCompilation.setIsEnabled(isICEnabledBackup)
         super.tearDown()
     }
+
+    protected abstract fun runCompiler(filesToCompile: Iterable<File>, env: JpsCompilerEnvironment): Any?
 
     fun doTest(path: String) {
         val sb = StringBuilder()
@@ -156,6 +265,8 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
         return CompilerOutput(exitCode.toString(), messageCollector.errors, filesToCompile, lookupsCount)
     }
 
+    protected open fun Services.Builder.registerAdditionalServices() {}
+
     private fun createEnvironment(
             lookupTracker: LookupTracker,
             messageCollector: MessageCollector,
@@ -164,11 +275,13 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
         val paths = PathUtil.getKotlinPathsForDistDirectory()
         val services = Services.Builder().run {
             register(LookupTracker::class.java, lookupTracker)
+            registerAdditionalServices()
             build()
         }
         val classesToLoadByParent = ClassCondition { className ->
             className.startsWith("org.jetbrains.kotlin.load.kotlin.incremental.components.")
             || className.startsWith("org.jetbrains.kotlin.incremental.components.")
+            || className.startsWith("org.jetbrains.kotlin.incremental.js")
             || className == "org.jetbrains.kotlin.config.Services"
             || className.startsWith("org.apache.log4j.") // For logging from compiler
             || className == "org.jetbrains.kotlin.progress.CompilationCanceledStatus"
@@ -177,35 +290,6 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
         }
         val wrappedMessageCollector = MessageCollectorToOutputItemsCollectorAdapter(messageCollector, outputItemsCollector)
         return JpsCompilerEnvironment(paths, services, classesToLoadByParent, wrappedMessageCollector, outputItemsCollector)
-    }
-
-    private fun runCompiler(filesToCompile: Iterable<File>, env: JpsCompilerEnvironment): Any? {
-        val moduleFile = makeModuleFile(name = "test",
-                                        isTest = true,
-                                        outputDir = outDir,
-                                        sourcesToCompile = filesToCompile.toList(),
-                                        javaSourceRoots = listOf(srcDir),
-                                        classpath = listOf(outDir).filter { it.exists() },
-                                        friendDirs = emptyList())
-        outDir.mkdirs()
-        val args = K2JVMCompilerArguments().apply {
-            buildFile = moduleFile.canonicalPath
-            reportOutputFiles = true
-        }
-        val argsArray = ArgumentUtils.convertArgumentsToStringList(args).toTypedArray()
-
-        try {
-            val stream = ByteArrayOutputStream()
-            val out = PrintStream(stream)
-            val exitCode = CompilerRunnerUtil.invokeExecMethod(K2JVMCompiler::class.java.name, argsArray, env, out)
-            val reader = BufferedReader(StringReader(stream.toString()))
-            CompilerOutputParser.parseCompilerMessagesFromReader(env.messageCollector, reader, env.outputItemsCollector)
-
-            return exitCode
-        }
-        finally {
-            moduleFile.delete()
-        }
     }
 
     private fun checkLookups(
