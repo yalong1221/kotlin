@@ -41,6 +41,8 @@ import org.jetbrains.kotlin.cfg.AbstractDataFlowTest
 import org.jetbrains.kotlin.cfg.AbstractDiagnosticsWithModifiedMockJdkTest
 import org.jetbrains.kotlin.cfg.AbstractPseudoValueTest
 import org.jetbrains.kotlin.checkers.*
+import org.jetbrains.kotlin.checkers.javac.AbstractDiagnosticsUsingJavacTest
+import org.jetbrains.kotlin.checkers.javac.AbstractJavacDiagnosticsTest
 import org.jetbrains.kotlin.cli.AbstractCliTest
 import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.codegen.defaultConstructor.AbstractDefaultArgumentsReflectionTest
@@ -201,6 +203,16 @@ fun main(args: Array<String>) {
             model("diagnostics/tests")
             model("diagnostics/tests/script", extension = "kts")
             model("codegen/box/diagnostics")
+        }
+
+        testClass<AbstractDiagnosticsUsingJavacTest> {
+            model("diagnostics/tests")
+            model("codegen/box/diagnostics")
+        }
+
+        testClass<AbstractJavacDiagnosticsTest> {
+            model("javac/diagnostics/tests")
+            model("javac/diagnostics/tests", testClassName = "TestsWithoutJavac", testMethod = "doTestWithoutJavacWrapper")
         }
 
         testClass<AbstractDiagnosticsTestWithStdLib> {
