@@ -101,8 +101,7 @@ class IncrementalJvmCompilerRunner(
             messageCollector: MessageCollector,
             getChangedFiles: (IncrementalCachesManager)->ChangedFiles
     ): ExitCode {
-        val targetId = TargetId(name = args.moduleName!!, type = "java-production")
-        var caches = IncrementalJvmCachesManager(targetId, cacheDirectory, File(args.destination), reporter)
+        var caches = IncrementalJvmCachesManager(cacheDirectory, File(args.destination), reporter)
 
         fun rebuild(): ExitCode {
             caches.clean()
@@ -110,8 +109,8 @@ class IncrementalJvmCompilerRunner(
             args.destinationAsFile.deleteRecursively()
 
             val javaFilesProcessor = ChangedJavaFilesProcessor(reporter)
-            caches = IncrementalJvmCachesManager(targetId, cacheDirectory, args.destinationAsFile, reporter)
-            return compileIncrementally(args, caches, javaFilesProcessor, allKotlinSources, targetId, CompilationMode.Rebuild, messageCollector)
+            caches = IncrementalJvmCachesManager(cacheDirectory, args.destinationAsFile, reporter)
+            return compileIncrementally(args, caches, javaFilesProcessor, allKotlinSources, CompilationMode.Rebuild, messageCollector)
         }
 
         return try {
@@ -121,7 +120,7 @@ class IncrementalJvmCompilerRunner(
 
             val exitCode = when (compilationMode) {
                 is CompilationMode.Incremental -> {
-                    compileIncrementally(args, caches, javaFilesProcessor, allKotlinSources, targetId, compilationMode, messageCollector)
+                    compileIncrementally(args, caches, javaFilesProcessor, allKotlinSources, compilationMode, messageCollector)
                 }
                 is CompilationMode.Rebuild -> {
                     rebuild()
@@ -251,7 +250,6 @@ class IncrementalJvmCompilerRunner(
             caches: IncrementalJvmCachesManager,
             javaFilesProcessor: ChangedJavaFilesProcessor,
             allKotlinSources: List<File>,
-            targetId: TargetId,
             compilationMode: CompilationMode,
             messageCollector: MessageCollector
     ): ExitCode {
@@ -294,7 +292,7 @@ class IncrementalJvmCompilerRunner(
             val text = allSourcesToCompile.joinToString(separator = System.getProperty("line.separator")) { it.canonicalPath }
             dirtySourcesSinceLastTimeFile.writeText(text)
 
-            val compilerOutput = compileChanged(listOf(targetId), sourcesToCompile.toSet(), args, caches.jvmCache, lookupTracker, messageCollector)
+            val compilerOutput = compileChanged(sourcesToCompile.toSet(), args, caches.jvmCache, lookupTracker, messageCollector)
             exitCode = compilerOutput.exitCode
             val generatedFiles = compilerOutput.generatedFiles
             anyClassesCompiled = anyClassesCompiled || generatedFiles.isNotEmpty() || removedKotlinSources.isNotEmpty()
@@ -318,9 +316,7 @@ class IncrementalJvmCompilerRunner(
 
             allGeneratedFiles.addAll(generatedFiles)
             caches.inputsCache.registerOutputForSourceFiles(generatedFiles)
-            val compilationResult = updateIncrementalCaches(listOf(targetId), generatedFiles,
-                    compiledWithErrors = exitCode != ExitCode.OK,
-                    getIncrementalCache = { caches.jvmCache })
+            val compilationResult = updateIncrementalCache(generatedFiles, caches.jvmCache, compiledWithErrors = exitCode != ExitCode.OK)
 
             caches.lookupCache.update(lookupTracker, sourcesToCompile, removedKotlinSources)
 
@@ -363,7 +359,7 @@ class IncrementalJvmCompilerRunner(
     }
 
     private fun additionalDirtyFiles(
-            cache: IncrementalCacheImpl<TargetId>,
+            cache: IncrementalCacheImpl,
             generatedFiles: List<GeneratedFile<TargetId>>
     ): Collection<File> {
         val result = HashSet<File>()
@@ -401,10 +397,9 @@ class IncrementalJvmCompilerRunner(
     }
 
     private fun compileChanged(
-            targets: List<TargetId>,
             sourcesToCompile: Set<File>,
             args: K2JVMCompilerArguments,
-            cache: IncrementalCacheImpl<TargetId>,
+            cache: IncrementalCacheImpl,
             lookupTracker: LookupTracker,
             messageCollector: MessageCollector
     ): CompileChangedResults {
@@ -427,7 +422,8 @@ class IncrementalJvmCompilerRunner(
         val messageCollector = MessageCollectorWrapper(messageCollector, outputItemCollector)
 
         try {
-            val incrementalCaches = makeIncrementalCachesMap(targets, { listOf<TargetId>() }, { cache }, { this })
+            val targetId = TargetId(args.moduleName, "java-production")
+            val incrementalCaches = mapOf(targetId to cache)
             val compilationCanceledStatus = object : CompilationCanceledStatus {
                 override fun checkCanceled() {
                 }
@@ -437,7 +433,14 @@ class IncrementalJvmCompilerRunner(
             reporter.report { "compiling with classpath: ${classpath.toList().sorted().joinToString()}" }
             val compileServices = makeCompileServices(incrementalCaches, lookupTracker, compilationCanceledStatus)
             val exitCode = compiler.exec(messageCollector, compileServices, args)
-            val generatedFiles = outputItemCollector.generatedFiles(targets, targets.first(), {sourcesToCompile}, {outputDir})
+            val generatedFiles = outputItemCollector.outputs.map {
+                val outputItem = it.outputFile
+                val sourceFiles = it.sourceFiles
+                when (outputItem.extension) {
+                    "class" -> GeneratedJvmClass(targetId, sourceFiles, outputItem)
+                    else -> GeneratedFile(targetId, sourceFiles, outputItem)
+                }
+            }
             reporter.reportCompileIteration(sourcesToCompile, exitCode)
             return CompileChangedResults(exitCode, generatedFiles)
         }
