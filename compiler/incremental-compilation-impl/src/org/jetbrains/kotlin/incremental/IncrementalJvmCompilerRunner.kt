@@ -28,9 +28,7 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.OutputMessageUtil
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
-import org.jetbrains.kotlin.compilerRunner.ArgumentUtils
-import org.jetbrains.kotlin.compilerRunner.OutputItemsCollector
-import org.jetbrains.kotlin.compilerRunner.OutputItemsCollectorImpl
+import org.jetbrains.kotlin.compilerRunner.*
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.multiproject.ArtifactChangesProvider
@@ -177,16 +175,16 @@ abstract class IncrementalCompilerRunner<
     protected open fun markOutputDirty(caches: CacheManager, dirtySources: List<File>) {
     }
 
-    protected abstract fun compareAndUpdateCache(caches: CacheManager, generatedFiles: List<GeneratedFile<*>>): CompilationResult
+    protected abstract fun compareAndUpdateCache(caches: CacheManager, generatedFiles: List<GeneratedFile>): CompilationResult
 
     protected open fun preBuildHook(args: Args, compilationMode: CompilationMode) {}
     protected open fun postCompilationHook(exitCode: ExitCode) {}
-    protected open fun additionalDirtyFiles(caches: CacheManager, generatedFiles: List<GeneratedFile<*>>): Iterable<File> =
+    protected open fun additionalDirtyFiles(caches: CacheManager, generatedFiles: List<GeneratedFile>): Iterable<File> =
             emptyList()
 
     protected abstract fun compileIncrementally(args: Args, caches: CacheManager, allKotlinSources: List<File>, compilationMode: CompilationMode, messageCollector: MessageCollector): ExitCode
 
-    protected data class CompileChangedResults(val exitCode: ExitCode, val generatedFiles: List<GeneratedFile<TargetId>>)
+    protected data class CompileChangedResults(val exitCode: ExitCode, val generatedFiles: List<GeneratedFile>)
 
     protected sealed class CompilationMode {
         class Incremental(val dirtyFiles: Set<File>) : CompilationMode()
@@ -331,7 +329,7 @@ class IncrementalJvmCompilerRunner(
         }
     }
 
-    override fun compareAndUpdateCache(caches: IncrementalJvmCachesManager, generatedFiles: List<GeneratedFile<*>>): CompilationResult =
+    override fun compareAndUpdateCache(caches: IncrementalJvmCachesManager, generatedFiles: List<GeneratedFile>): CompilationResult =
         updateIncrementalCache(generatedFiles, caches.platformCache)
 
     override fun compileIncrementally(
@@ -355,7 +353,7 @@ class IncrementalJvmCompilerRunner(
         val allSourcesToCompile = HashSet<File>()
 
         var exitCode = ExitCode.OK
-        val allGeneratedFiles = hashSetOf<GeneratedFile<TargetId>>()
+        val allGeneratedFiles = hashSetOf<GeneratedFile>()
 
         while (dirtySources.any()) {
             markOutputDirty(caches, dirtySources)
@@ -433,7 +431,7 @@ class IncrementalJvmCompilerRunner(
 
     override fun additionalDirtyFiles(
             caches: IncrementalJvmCachesManager,
-            generatedFiles: List<GeneratedFile<*>>
+            generatedFiles: List<GeneratedFile>
     ): Iterable<File> {
         val cache = caches.platformCache
         val result = HashSet<File>()
@@ -444,7 +442,7 @@ class IncrementalJvmCompilerRunner(
         }
 
         for (generatedFile in generatedFiles) {
-            if (generatedFile !is GeneratedJvmClass<*>) continue
+            if (generatedFile !is GeneratedJvmClass) continue
 
             val outputClass = generatedFile.outputClass
 
@@ -508,14 +506,7 @@ class IncrementalJvmCompilerRunner(
             reporter.report { "compiling with classpath: ${classpath.toList().sorted().joinToString()}" }
             val compileServices = makeCompileServices(incrementalCaches, lookupTracker, compilationCanceledStatus)
             val exitCode = compiler.exec(messageCollector, compileServices, args)
-            val generatedFiles = outputItemCollector.outputs.map {
-                val outputItem = it.outputFile
-                val sourceFiles = it.sourceFiles
-                when (outputItem.extension) {
-                    "class" -> GeneratedJvmClass(targetId, sourceFiles, outputItem)
-                    else -> GeneratedFile(targetId, sourceFiles, outputItem)
-                }
-            }
+            val generatedFiles = outputItemCollector.outputs.map(SimpleOutputItem::toGeneratedFile)
             reporter.reportCompileIteration(sourcesToCompile, exitCode)
             return CompileChangedResults(exitCode, generatedFiles)
         }
