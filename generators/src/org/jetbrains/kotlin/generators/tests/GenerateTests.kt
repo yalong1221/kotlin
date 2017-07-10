@@ -1310,6 +1310,10 @@ fun main(args: Array<String>) {
         testClass<AbstractParcelCheckerTest> {
             model("android/parcel/checker", excludeParentDirs = true)
         }
+
+        testClass<AbstractAndroidExtensionsInspectionTest> {
+            model("android/inspection", singleClass = true)
+        }
     }
 
     testGroup("idea/idea-android/tests", "idea/testData") {
