@@ -257,12 +257,7 @@ class KotlinToResolvedCallTransformer(
 
         updatedType = updateRecordedTypeForArgument(updatedType, recordedType, expression, context)
 
-        val trace = object : BindingTrace by context.trace {
-            override fun report(diagnostic: Diagnostic) {
-                // only record info
-            }
-        }
-        dataFlowAnalyzer.checkType(updatedType, deparenthesized, context.replaceBindingTrace(trace))
+        dataFlowAnalyzer.checkType(updatedType, deparenthesized, context)
 
         return updatedType
     }
@@ -281,7 +276,6 @@ class KotlinToResolvedCallTransformer(
             context: BasicCallResolutionContext
     ): KotlinType? {
         if ((!ErrorUtils.containsErrorType(recordedType) && recordedType == updatedType) || updatedType == null) return updatedType
-
         val expressions = ArrayList<KtExpression>().also { expressions ->
             var expression: KtExpression? = argumentExpression
             while (expression != null) {
@@ -296,6 +290,7 @@ class KotlinToResolvedCallTransformer(
             if (!(expression is KtParenthesizedExpression || expression is KtLabeledExpression || expression is KtAnnotatedExpression)) {
                 shouldBeMadeNullable = hasNecessarySafeCall(expression, context.trace)
             }
+
             BindingContextUtils.updateRecordedType(updatedType, expression, context.trace, shouldBeMadeNullable)
         }
 
