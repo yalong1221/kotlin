@@ -349,8 +349,9 @@ class KotlinToResolvedCallTransformer(
 
         for (diagnostic in completedCall.resolutionStatus.diagnostics) {
             trackingTrace.reported = false
+            val isResolutionDiagnostic = diagnostic is ResolutionDiagnostic
             diagnostic.report(diagnosticReporter)
-            if (!trackingTrace.reported && REPORT_MISSING_NEW_INFERENCE_DIAGNOSTIC) {
+            if ((!trackingTrace.reported || isResolutionDiagnostic) && REPORT_MISSING_NEW_INFERENCE_DIAGNOSTIC) {
                 val factory = if (diagnostic.candidateApplicability.isSuccess) Errors.NEW_INFERENCE_DIAGNOSTIC else Errors.NEW_INFERENCE_ERROR
                 trace.report(factory.on(diagnosticReporter.psiKotlinCall.psiCall.callElement, "Missing diagnostic: $diagnostic"))
             }
