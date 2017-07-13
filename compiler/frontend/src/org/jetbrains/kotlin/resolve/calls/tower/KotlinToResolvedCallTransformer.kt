@@ -257,7 +257,12 @@ class KotlinToResolvedCallTransformer(
 
         updatedType = updateRecordedTypeForArgument(updatedType, recordedType, expression, context)
 
-        dataFlowAnalyzer.checkType(updatedType, deparenthesized, context)
+        val trace = object : BindingTrace by context.trace {
+            override fun report(diagnostic: Diagnostic) {
+                // only record info
+            }
+        }
+        dataFlowAnalyzer.checkType(updatedType, deparenthesized, context.replaceBindingTrace(trace))
 
         return updatedType
     }
@@ -344,7 +349,8 @@ class KotlinToResolvedCallTransformer(
             completedCall: CompletedKotlinCall.Simple
     ) {
         val trackingTrace = TrackingBindingTrace(trace)
-        val diagnosticReporter = DiagnosticReporterByTrackingStrategy(constantExpressionEvaluator, context, trackingTrace, completedCall.kotlinCall.psiKotlinCall)
+        val newContext = context.replaceBindingTrace(trackingTrace)
+        val diagnosticReporter = DiagnosticReporterByTrackingStrategy(constantExpressionEvaluator, newContext, trackingTrace, completedCall.kotlinCall.psiKotlinCall)
 
         for (diagnostic in completedCall.resolutionStatus.diagnostics) {
             trackingTrace.reported = false
