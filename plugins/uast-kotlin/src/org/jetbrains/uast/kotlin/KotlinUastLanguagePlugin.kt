@@ -218,7 +218,7 @@ internal object KotlinConverter {
                 val parent = if (parentCallback == null) null else (parentCallback() ?: return null)
                 KotlinUDeclarationsExpression(parent).apply {
                     declarations = element.parameters.mapIndexed { i, p ->
-                        KotlinUVariable.create(UastKotlinPsiParameter.create(p, element, parent!!, i), this)
+                        KotlinUParameter(UastKotlinPsiParameter.create(p, element, parent!!, i), this)
                     }
                 }
             }
@@ -301,13 +301,12 @@ internal object KotlinConverter {
             is KtDestructuringDeclaration -> expr<UDeclarationsExpression> {
                 val parent = if (parentCallback == null) null else (parentCallback() ?: return null)
                 KotlinUDeclarationsExpression(parent).apply {
-                    val tempAssignment = KotlinUVariable.create(UastKotlinPsiVariable.create(expression, parent!!), parent)
+                    val tempAssignment = KotlinULocalVariable(UastKotlinPsiVariable.create(expression, parent!!), parent)
                     val destructuringAssignments = expression.entries.mapIndexed { i, entry ->
                         val psiFactory = KtPsiFactory(expression.project)
                         val initializer = psiFactory.createAnalyzableExpression("${tempAssignment.name}.component${i + 1}()",
                                                                                 expression.containingFile)
-                        KotlinUVariable.create(UastKotlinPsiVariable.create(
-                                entry, tempAssignment.psi, parent, initializer), parent)
+                        KotlinULocalVariable(UastKotlinPsiVariable.create(entry, tempAssignment.psi, parent, initializer), parent)
                     }
                     declarations = listOf(tempAssignment) + destructuringAssignments
                 }
@@ -362,7 +361,6 @@ internal object KotlinConverter {
                 expr<UDeclarationsExpression>(build(::createLocalFunctionDeclaration))
             }
 
-
             else -> expr<UExpression>(build(::UnknownKotlinExpression))
         }}
     }
@@ -397,6 +395,9 @@ private fun convertVariablesDeclaration(
         parent: UElement?
 ): UDeclarationsExpression {
     val parentPsiElement = parent?.psi
-    val variable = KotlinUVariable.create(UastKotlinPsiVariable.create(psi, parentPsiElement, parent!!), parent)
+    val variable = KotlinUAnnotatedLocalVariable(
+            UastKotlinPsiVariable.create(psi, parentPsiElement, parent!!), parent) { annotationParent ->
+        psi.annotationEntries.map { KotlinUAnnotation(it, annotationParent) }
+    }
     return KotlinUDeclarationsExpression(parent).apply { declarations = listOf(variable) }
 }
