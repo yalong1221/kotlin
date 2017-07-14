@@ -62,4 +62,25 @@ class KotlinUastApiTest : AbstractKotlinUastTest() {
             assertTrue(bar.containingFile.text!!, bar.psi.modifierList.hasModifierProperty(PsiModifier.DEFAULT))
         }
     }
+
+    @Test fun testSAM() {
+        doTest("SAM") { _, file ->
+            assertNull(file.findElementByText<ULambdaExpression>("{ /* Not SAM */ }").functionalInterfaceType)
+
+            assertEquals("java.lang.Runnable",
+                         file.findElementByText<ULambdaExpression>("{/* Variable */}").functionalInterfaceType?.canonicalText)
+
+            assertEquals("java.lang.Runnable",
+                         file.findElementByText<ULambdaExpression>("{/* Assignment */}").functionalInterfaceType?.canonicalText)
+
+            assertEquals("java.lang.Runnable",
+                          file.findElementByText<ULambdaExpression>("{/* Type Cast */}").functionalInterfaceType?.canonicalText)
+
+            assertEquals("java.lang.Runnable",
+                         file.findElementByText<ULambdaExpression>("{/* Argument */}").functionalInterfaceType?.canonicalText)
+
+            assertEquals("java.lang.Runnable",
+                         file.findElementByText<ULambdaExpression>("{/* Return */}").functionalInterfaceType?.canonicalText)
+        }
+    }
 }
