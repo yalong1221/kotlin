@@ -21274,13 +21274,35 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("lambdaBetweenArguments.kt")
                 public void testLambdaBetweenArguments() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/variables/lambdaBetweenArguments.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("property.kt")
                 public void testProperty() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/variables/property.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("propertyNotNeeded.kt")
@@ -21355,7 +21377,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("assignment.kt")
                 public void testAssignment() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/varnotnull/assignment.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("boundInitializer.kt")
@@ -21445,13 +21478,35 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("initInTryReturnInCatch.kt")
                 public void testInitInTryReturnInCatch() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/varnotnull/initInTryReturnInCatch.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("initialization.kt")
                 public void testInitialization() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/varnotnull/initialization.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("iterations.kt")
@@ -21481,7 +21536,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("plusplusMinusminus.kt")
                 public void testPlusplusMinusminus() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/varnotnull/plusplusMinusminus.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("postfixNotnullClassIncrement.kt")
@@ -21571,7 +21637,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("unnecessaryWithMap.kt")
                 public void testUnnecessaryWithMap() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/varnotnull/unnecessaryWithMap.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("varCapturedInClosure.kt")
@@ -21583,7 +21660,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("varCapturedInInlineClosure.kt")
                 public void testVarCapturedInInlineClosure() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/varnotnull/varCapturedInInlineClosure.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("varCapturedInSafeClosure.kt")
@@ -21607,7 +21695,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("varIntNull.kt")
                 public void testVarIntNull() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/varnotnull/varIntNull.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("varNotChangedInLoop.kt")
@@ -21619,7 +21718,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("varNull.kt")
                 public void testVarNull() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/smartCasts/varnotnull/varNull.kt");
-                    doTest(fileName);
+                    try {
+                        doTest(fileName);
+                    }
+                    catch (Throwable ignore) {
+                        if (!org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                            throw ignore;
+                        }
+                        return;
+                    }
+                    if (org.jetbrains.kotlin.resolve.calls.KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
+                        throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_IF_NEW_INFERENCE_ENABLED directive for that.");
+                    }
                 }
 
                 @TestMetadata("whileTrue.kt")
