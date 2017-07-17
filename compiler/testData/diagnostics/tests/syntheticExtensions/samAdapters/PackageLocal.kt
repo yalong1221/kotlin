@@ -1,4 +1,5 @@
 // FILE: KotlinFile1.kt
+// IGNORE_IF_NEW_INFERENCE_ENABLED
 package k
 
 import JavaClass
