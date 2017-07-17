@@ -20531,6 +20531,12 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
         }
 
+        @TestMetadata("smartcastElvisWrong.kt")
+        public void testSmartcastElvisWrong() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/regressions/smartcastElvisWrong.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("supertypeDepth.kt")
         public void testSupertypeDepth() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/regressions/supertypeDepth.kt");
