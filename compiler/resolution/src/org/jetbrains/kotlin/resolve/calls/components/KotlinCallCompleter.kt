@@ -213,6 +213,9 @@ class KotlinCallCompleter(
 
     private fun canWeAnalyzeIt(c: Context, lambda: PostponedLambdaArgument): Boolean {
         if (lambda.analyzed) return false
+
+        if (c.hasContradiction) return true // can't get any worse
+
         lambda.receiver?.let {
             if (!c.canBeProper(it)) return false
         }
