@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.resolve.calls
 
 import org.jetbrains.kotlin.builtins.functions.FunctionInvokeDescriptor
+import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Errors.*
 import org.jetbrains.kotlin.diagnostics.Errors.BadNamedArgumentsTarget.INVOKE_ON_FUNCTION_TYPE
 import org.jetbrains.kotlin.diagnostics.Errors.BadNamedArgumentsTarget.NON_KOTLIN_FUNCTION
@@ -161,6 +162,10 @@ class DiagnosticReporterByTrackingStrategy(
                         val receiver = (argument as? ReceiverExpressionKotlinCallArgument)?.receiver?.receiverValue ?: return
                         tracingStrategy.wrongReceiverType(trace, constraintError.upperType, receiver, context)
                     }
+
+                    val expression = it.psiExpression ?: return
+                    if (reportConstantTypeMismatch(constraintError, expression)) return
+                    trace.report(Errors.TYPE_MISMATCH.on(expression, constraintError.upperType, constraintError.lowerType))
 
                     // should be reported in TypeChecker
                     trace.markAsReported()
