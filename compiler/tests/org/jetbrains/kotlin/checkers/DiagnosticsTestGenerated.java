@@ -11267,6 +11267,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                     doTest(fileName);
                 }
 
+                @TestMetadata("constraintSystemErrorImprovement.kt")
+                public void testConstraintSystemErrorImprovement() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/inference/reportingImprovements/constraintSystemErrorImprovement.kt");
+                    doTest(fileName);
+                }
+
                 @TestMetadata("ErrorTypeAsGenericParameter.kt")
                 public void testErrorTypeAsGenericParameter() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/inference/reportingImprovements/ErrorTypeAsGenericParameter.kt");
