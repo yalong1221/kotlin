@@ -121,6 +121,8 @@ class KotlinCallCompleter(
                 }
             }
         }
+
+        handleDiagnostics(c, completedCall)
         return ResolvedKotlinCall.CompletedResolvedKotlinCall(completedCall, competedCalls, c.lambdaArguments)
     }
 

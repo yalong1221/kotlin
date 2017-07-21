@@ -80,3 +80,7 @@ class CapturedTypeFromSubtyping(
 ) : ConstraintSystemCallDiagnostic(INAPPLICABLE)
 
 class NotEnoughInformationForTypeParameter(val typeVariable: NewTypeVariable) : ConstraintSystemCallDiagnostic(INAPPLICABLE)
+
+class AggregatedConstraintError(
+        val constraintError: NewConstraintError
+) : ConstraintSystemCallDiagnostic(INAPPLICABLE)

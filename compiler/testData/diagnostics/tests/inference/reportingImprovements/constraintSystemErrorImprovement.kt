@@ -1,13 +1,19 @@
 // !DIAGNOSTICS: -UNUSED_PARAMETER
 // WITH_RUNTIME
 
-//class MyHashMap<K, V>
-//
-//fun <K, V> myGet(receiver: MyHashMap<K, V>, x: K) {}
-//
-//fun <K, V> test(c: MyHashMap<K, V>, x: K, y: V) {
-//    myGet(c, y)
-//}
+class MyHashMap<K, V>
+
+fun <K, V> myGet(receiver: MyHashMap<K, V>, x: K, y: V) {}
+fun <K : Any, V : Any> myGet(receiver: MyHashMap<K, V>) {}
+
+fun <K, V> test(c: MyHashMap<K, V>, x: K, y: V) {
+//    myGet(c, y, x)
+    myGet(c)
+//    myGet(c, y, subCall())
+}
+
+fun <V> subCall(): V = TODO()
+
 
 
 //fun <K : Any> myGet(receiver: K) {}
