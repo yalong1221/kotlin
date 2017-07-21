@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.resolve.calls.inference.model
 
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.resolve.calls.components.SortedConstraints
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.calls.tower.ResolutionCandidateApplicability
 import org.jetbrains.kotlin.resolve.calls.tower.ResolutionCandidateApplicability.INAPPLICABLE
@@ -70,7 +71,8 @@ abstract class ConstraintSystemCallDiagnostic(applicability: ResolutionCandidate
 class NewConstraintError(
         val lowerType: UnwrappedType,
         val upperType: UnwrappedType,
-        val position: IncorporationConstraintPosition
+        val position: IncorporationConstraintPosition,
+        val typeVariable: NewTypeVariable? = null
 ) : ConstraintSystemCallDiagnostic(if (position.from is ReceiverConstraintPosition) INAPPLICABLE_WRONG_RECEIVER else INAPPLICABLE)
 
 class CapturedTypeFromSubtyping(
@@ -82,5 +84,7 @@ class CapturedTypeFromSubtyping(
 class NotEnoughInformationForTypeParameter(val typeVariable: NewTypeVariable) : ConstraintSystemCallDiagnostic(INAPPLICABLE)
 
 class AggregatedConstraintError(
-        val constraintError: NewConstraintError
+        val constraintPosition: ConstraintPosition,
+        val typeVariable: NewTypeVariable,
+        val sortedConstraints: SortedConstraints
 ) : ConstraintSystemCallDiagnostic(INAPPLICABLE)

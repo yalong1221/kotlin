@@ -17,7 +17,6 @@
 package org.jetbrains.kotlin.resolve.calls
 
 import org.jetbrains.kotlin.builtins.functions.FunctionInvokeDescriptor
-import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Errors.*
 import org.jetbrains.kotlin.diagnostics.Errors.BadNamedArgumentsTarget.INVOKE_ON_FUNCTION_TYPE
 import org.jetbrains.kotlin.diagnostics.Errors.BadNamedArgumentsTarget.NON_KOTLIN_FUNCTION
@@ -163,9 +162,9 @@ class DiagnosticReporterByTrackingStrategy(
                         tracingStrategy.wrongReceiverType(trace, constraintError.upperType, receiver, context)
                     }
 
-                    val expression = it.psiExpression ?: return
-                    if (reportConstantTypeMismatch(constraintError, expression)) return
-                    trace.report(Errors.TYPE_MISMATCH.on(expression, constraintError.upperType, constraintError.lowerType))
+//                    val expression = it.psiExpression ?: return
+//                    if (reportConstantTypeMismatch(constraintError, expression)) return
+//                    trace.report(Errors.TYPE_MISMATCH.on(expression, constraintError.upperType, constraintError.lowerType))
 
                     // should be reported in TypeChecker
                     trace.markAsReported()
@@ -180,6 +179,14 @@ class DiagnosticReporterByTrackingStrategy(
                 (capturedError.position as? ArgumentConstraintPosition)?.let {
                     val expression = it.argument.psiExpression ?: return
                     trace.report(NEW_INFERENCE_ERROR.on(expression, "Capture type from subtyping ${capturedError.constraintType} for variable ${capturedError.typeVariable}"))
+                }
+            }
+            AggregatedConstraintError::class.java -> {
+                val constraintError = diagnostic as AggregatedConstraintError
+                val position = constraintError.constraintPosition
+                (position as? ArgumentConstraintPosition)?.let {
+                    val expression = it.argument.psiExpression ?: return
+                    trace.report(CONTRADICTION_IN_CONSTRAINT_SYSTEM.on(expression, constraintError.typeVariable, constraintError.sortedConstraints))
                 }
             }
         }

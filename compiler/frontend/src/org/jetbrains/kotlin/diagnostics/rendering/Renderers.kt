@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.renderer.DescriptorRenderer
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.MemberComparator
 import org.jetbrains.kotlin.resolve.MultiTargetPlatform
+import org.jetbrains.kotlin.resolve.calls.components.SortedConstraints
 import org.jetbrains.kotlin.resolve.calls.inference.*
 import org.jetbrains.kotlin.resolve.calls.inference.TypeBounds.Bound
 import org.jetbrains.kotlin.resolve.calls.inference.TypeBounds.BoundKind.LOWER_BOUND
@@ -43,6 +44,7 @@ import org.jetbrains.kotlin.resolve.calls.inference.TypeBounds.BoundKind.UPPER_B
 import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.ConstraintPosition
 import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.ConstraintPositionKind.*
 import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.getValidityConstraintForConstituentType
+import org.jetbrains.kotlin.resolve.calls.inference.model.Constraint
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.getMultiTargetPlatform
 import org.jetbrains.kotlin.types.*
@@ -180,6 +182,21 @@ object Renderers {
 
     @JvmField val TYPE_INFERENCE_CANNOT_CAPTURE_TYPES_RENDERER = Renderer<InferenceErrorData> {
         renderCannotCaptureTypeParameterError(it, TabledDescriptorRenderer.create()).toString()
+    }
+
+    @JvmField val SORTED_CONSTRAINTS_RENDERER = Renderer<SortedConstraints> {
+        buildString {
+            appendIfNotEmpty(it.upper, "upper bounds: ")
+            appendIfNotEmpty(it.equality, "equality constraints: ")
+            appendIfNotEmpty(it.lower, "lower bounds: ", false)
+        }
+    }
+
+    private fun StringBuilder.appendIfNotEmpty(constraints: List<Constraint>, prefix: String, newLine: Boolean = true) {
+        if (constraints.isEmpty()) return
+        append(prefix)
+        append(constraints.joinToString { it.type.toString() }) // Render properly
+        if (newLine) append("\n")
     }
 
     @JvmStatic fun renderConflictingSubstitutionsInferenceError(

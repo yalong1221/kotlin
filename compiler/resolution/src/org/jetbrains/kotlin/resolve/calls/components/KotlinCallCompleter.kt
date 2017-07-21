@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.resolve.calls.inference.components.*
 import org.jetbrains.kotlin.resolve.calls.inference.model.ExpectedTypeConstraintPosition
 import org.jetbrains.kotlin.resolve.calls.inference.model.LambdaArgumentConstraintPosition
 import org.jetbrains.kotlin.resolve.calls.inference.model.NewTypeVariable
+import org.jetbrains.kotlin.resolve.calls.inference.model.VariableWithConstraints
 import org.jetbrains.kotlin.resolve.calls.inference.returnTypeOrNothing
 import org.jetbrains.kotlin.resolve.calls.inference.substituteAndApproximateCapturedTypes
 import org.jetbrains.kotlin.resolve.calls.model.*
@@ -59,6 +60,9 @@ class KotlinCallCompleter(
         fun addError(error: KotlinCallDiagnostic)
         fun fixVariable(variable: NewTypeVariable, resultType: UnwrappedType)
         fun getBuilder(): ConstraintSystemBuilder
+
+        // for diagnostics
+        fun variableConstraints(variable: NewTypeVariable): VariableWithConstraints?
     }
 
     fun transformWhenAmbiguity(candidate: KotlinResolutionCandidate, resolutionCallbacks: KotlinResolutionCallbacks): ResolvedKotlinCall =

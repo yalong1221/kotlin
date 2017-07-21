@@ -17,32 +17,49 @@
 package org.jetbrains.kotlin.resolve.calls.components
 
 import org.jetbrains.kotlin.resolve.calls.components.KotlinCallCompleter.Context
-import org.jetbrains.kotlin.resolve.calls.inference.model.ConstraintPosition
-import org.jetbrains.kotlin.resolve.calls.inference.model.IncorporationConstraintPosition
-import org.jetbrains.kotlin.resolve.calls.inference.model.NewConstraintError
+import org.jetbrains.kotlin.resolve.calls.inference.model.*
 import org.jetbrains.kotlin.resolve.calls.model.CompletedKotlinCall
+import org.jetbrains.kotlin.resolve.calls.tower.ResolutionCandidateApplicability
 
 fun handleDiagnostics(c: Context, completedCall: CompletedKotlinCall) {
     val positionErrors = groupErrorsByPosition(c, completedCall)
-    for ((initialPosition, incorporationPositions) in positionErrors) {
-        for (incorporationPosition in incorporationPositions) {
-            val lower = incorporationPosition.initialConstraint.a
-            val upper = incorporationPosition.initialConstraint.b
-            if (c.canBeProper(lower) && c.canBeProper(upper)) continue
+    for ((position, incorporationPositionsWithTypeVariables) in positionErrors) {
+        val variablesWithConstraints = incorporationPositionsWithTypeVariables.mapNotNull { (_, typeVariable) ->
+            if (typeVariable == null) return@mapNotNull null
+            if (c.canBeProper(typeVariable.defaultType)) return@mapNotNull null
 
+            c.variableConstraints(typeVariable)
+        }.distinctBy { it.typeVariable }
 
+        if (variablesWithConstraints.isEmpty()) continue
+
+        // Each position can refer to the same type variables, we'll fix it later
+        // Also, probably it's enough to show error only about one type parameter
+        for (variableWithConstraint in variablesWithConstraints) {
+            c.addError(AggregatedConstraintError(position, variableWithConstraint.typeVariable, divideByConstraints(variableWithConstraint)))
         }
     }
 }
 
-fun groupErrorsByPosition(c: Context, completedCall: CompletedKotlinCall): Map<ConstraintPosition, List<IncorporationConstraintPosition>> {
-    return completedCall.resolutionStatus.diagnostics
-            .distinct()
-            .filterIsInstance<NewConstraintError>()
-            .groupBy({ it.position.from }) { it.position }
+data class SortedConstraints(val upper: List<Constraint>, val equality: List<Constraint>, val lower: List<Constraint>)
+
+private fun divideByConstraints(variableWithConstraints: VariableWithConstraints): SortedConstraints {
+    return with(variableWithConstraints.constraints) {
+        SortedConstraints(getWith(ConstraintKind.UPPER), getWith(ConstraintKind.EQUALITY), getWith(ConstraintKind.LOWER))
+    }
 }
 
-private fun List<NewConstraintError>.distinct(): List<NewConstraintError> {
+private fun List<Constraint>.getWith(kind: ConstraintKind) = filter { it.kind == kind }
+
+private fun groupErrorsByPosition(c: Context, completedCall: CompletedKotlinCall): Map<ConstraintPosition, List<PositionWithTypeVariable>> {
+    return completedCall.resolutionStatus.diagnostics
+            .filterIsInstance<NewConstraintError>()
+            .filter { it.candidateApplicability != ResolutionCandidateApplicability.INAPPLICABLE_WRONG_RECEIVER }
+            .distinctErrors()
+            .groupBy({ it.position.from }) { PositionWithTypeVariable(it.position, it.typeVariable) }
+}
+
+private fun List<NewConstraintError>.distinctErrors(): List<NewConstraintError> {
     val distinctDiagnostics = mutableListOf<NewConstraintError>()
     for (diagnostic in this) {
         val added = distinctDiagnostics.any { otherDiagnostic ->
@@ -57,3 +74,5 @@ private fun List<NewConstraintError>.distinct(): List<NewConstraintError> {
 
     return distinctDiagnostics
 }
+
+private data class PositionWithTypeVariable(val position: IncorporationConstraintPosition, val typeVariable: NewTypeVariable?)
