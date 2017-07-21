@@ -106,10 +106,12 @@ class KotlinCallCompleter(
             candidate: KotlinResolutionCandidate,
             resolutionCallbacks: KotlinResolutionCallbacks
     ): ResolvedKotlinCall.CompletedResolvedKotlinCall {
+        handleDiagnostics(c, candidate.status)
+
         val currentSubstitutor = c.buildResultingSubstitutor()
-        val completedCall = candidate.toCompletedCall(currentSubstitutor)
+        val completedCall = candidate.toCompletedCall(c, currentSubstitutor)
         val competedCalls = c.innerCalls.map {
-            it.candidate.toCompletedCall(currentSubstitutor)
+            it.candidate.toCompletedCall(c, currentSubstitutor)
         }
         for (postponedArgument in c.postponedArguments) {
             when (postponedArgument) {
@@ -126,21 +128,20 @@ class KotlinCallCompleter(
             }
         }
 
-        handleDiagnostics(c, completedCall)
         return ResolvedKotlinCall.CompletedResolvedKotlinCall(completedCall, competedCalls, c.lambdaArguments)
     }
 
-    private fun KotlinResolutionCandidate.toCompletedCall(substitutor: NewTypeSubstitutor): CompletedKotlinCall {
+    private fun KotlinResolutionCandidate.toCompletedCall(c: Context, substitutor: NewTypeSubstitutor): CompletedKotlinCall {
         if (this is VariableAsFunctionKotlinResolutionCandidate) {
-            val variable = resolvedVariable.toCompletedCall(substitutor)
-            val invoke = invokeCandidate.toCompletedCall(substitutor)
+            val variable = resolvedVariable.toCompletedCall(c, substitutor)
+            val invoke = invokeCandidate.toCompletedCall(c, substitutor)
 
             return CompletedKotlinCall.VariableAsFunction(kotlinCall, variable, invoke)
         }
-        return (this as SimpleKotlinResolutionCandidate).toCompletedCall(substitutor)
+        return (this as SimpleKotlinResolutionCandidate).toCompletedCall(c, substitutor)
     }
 
-    private fun SimpleKotlinResolutionCandidate.toCompletedCall(substitutor: NewTypeSubstitutor): CompletedKotlinCall.Simple {
+    private fun SimpleKotlinResolutionCandidate.toCompletedCall(c: Context, substitutor: NewTypeSubstitutor): CompletedKotlinCall.Simple {
         val containsCapturedTypes = descriptorWithFreshTypes.returnType?.contains { it is NewCapturedType } ?: false
         val resultingDescriptor = when {
             descriptorWithFreshTypes is FunctionDescriptor ||
@@ -157,15 +158,22 @@ class KotlinCallCompleter(
             TypeApproximator().approximateToSuperType(substituted, TypeApproximatorConfiguration.CapturedTypesApproximation) ?: substituted
         }
 
-        val status = computeStatus(this, resultingDescriptor)
+        val status = computeStatus(c, this, resultingDescriptor)
         return CompletedKotlinCall.Simple(kotlinCall, candidateDescriptor, resultingDescriptor, status, explicitReceiverKind,
                                           dispatchReceiverArgument?.receiver, extensionReceiver?.receiver, typeArguments, argumentMappingByOriginal)
     }
 
-    private fun computeStatus(candidate: SimpleKotlinResolutionCandidate, resultingDescriptor: CallableDescriptor): ResolutionCandidateStatus {
-        val smartCasts = additionalDiagnosticReporter.createAdditionalDiagnostics(candidate, resultingDescriptor).takeIf { it.isNotEmpty() } ?:
-                         return candidate.status
-        return ResolutionCandidateStatus(candidate.status.diagnostics + smartCasts)
+    private fun computeStatus(
+            c: Context,
+            candidate: SimpleKotlinResolutionCandidate,
+            resultingDescriptor: CallableDescriptor
+    ): ResolutionCandidateStatus {
+        val smartCasts = additionalDiagnosticReporter.createAdditionalDiagnostics(candidate, resultingDescriptor)
+        val constraintSystemDiagnostics = handleDiagnostics(c, candidate.status)
+
+        if (smartCasts.isEmpty() && constraintSystemDiagnostics.isEmpty()) return candidate.status
+
+        return ResolutionCandidateStatus(candidate.status.diagnostics + smartCasts + constraintSystemDiagnostics)
     }
 
     // true if we should complete this call
