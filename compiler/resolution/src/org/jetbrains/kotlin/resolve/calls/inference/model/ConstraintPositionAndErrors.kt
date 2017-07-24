@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.resolve.calls.inference.model
 
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.components.SortedConstraints
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.calls.tower.ResolutionCandidateApplicability
@@ -41,9 +42,9 @@ class DeclaredUpperBoundConstraintPosition(val typeParameterDescriptor: TypePara
     override val message get() = "declared upper bound ${typeParameterDescriptor.name}"
     override fun toString() = "DeclaredUpperBound ${typeParameterDescriptor.name} from ${typeParameterDescriptor.containingDeclaration}"
 }
-class ArgumentConstraintPosition(val argument: KotlinCallArgument) : ConstraintPosition() {
+class ArgumentConstraintPosition(val argument: KotlinCallArgument, val parameterName: Name? = null) : ConstraintPosition() {
     override val message
-        get() = if (argument.argumentName != null) "argument $argument" else null
+        get() = if (parameterName != null) "argument for parameter '$parameterName'" else null
     override fun toString() = "Argument $argument"
 }
 

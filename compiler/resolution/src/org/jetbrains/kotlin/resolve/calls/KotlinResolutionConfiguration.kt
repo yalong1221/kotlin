@@ -20,8 +20,6 @@ val USE_NEW_INFERENCE = true
 
 val REPORT_MISSING_NEW_INFERENCE_DIAGNOSTIC = true
 
-class Inv1<K>
-
 //fun <T> foo(x: T, l: (T) -> Unit) {}
 //
 //fun test() {
@@ -37,9 +35,14 @@ class Inv1<K>
 //}
 
 //fun <T> foo(x: T, l: (T) -> Unit) {}
-
-fun <T> foo(x: T, l: () -> T) {
-}
+//class Inv1<K>
+//class Out1<out K>
+//
+//fun <T> foo(x: T, i1: Inv1<T>, o1: Out1<T>, y: T) {}
+//
+//fun ttest(i: Inv1<Int>, o: Out1<String>) {
+//    foo(1.0, i, o, "")
+//}
 
 //fun <T> onlyLambda(l: () -> T) {}
 //
