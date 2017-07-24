@@ -106,8 +106,6 @@ class KotlinCallCompleter(
             candidate: KotlinResolutionCandidate,
             resolutionCallbacks: KotlinResolutionCallbacks
     ): ResolvedKotlinCall.CompletedResolvedKotlinCall {
-        handleDiagnostics(c, candidate.status)
-
         val currentSubstitutor = c.buildResultingSubstitutor()
         val completedCall = candidate.toCompletedCall(c, currentSubstitutor)
         val competedCalls = c.innerCalls.map {
