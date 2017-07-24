@@ -986,6 +986,12 @@ public class PsiCheckerTestGenerated extends AbstractPsiCheckerTest {
             KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/checker/diagnosticsMessage"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
         }
 
+        @TestMetadata("capturedTypesAsSimpleTypes.kt")
+        public void testCapturedTypesAsSimpleTypes() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/capturedTypesAsSimpleTypes.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("incompleteTypeArgumentList.kt")
         public void testIncompleteTypeArgumentList() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/incompleteTypeArgumentList.kt");

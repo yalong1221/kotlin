@@ -107,9 +107,9 @@ class KotlinCallCompleter(
             resolutionCallbacks: KotlinResolutionCallbacks
     ): ResolvedKotlinCall.CompletedResolvedKotlinCall {
         val currentSubstitutor = c.buildResultingSubstitutor()
-        val completedCall = candidate.toCompletedCall(c, currentSubstitutor)
+        val completedCall = candidate.toCompletedCall(c, currentSubstitutor, true)
         val competedCalls = c.innerCalls.map {
-            it.candidate.toCompletedCall(c, currentSubstitutor)
+            it.candidate.toCompletedCall(c, currentSubstitutor, false)
         }
         for (postponedArgument in c.postponedArguments) {
             when (postponedArgument) {
@@ -129,17 +129,17 @@ class KotlinCallCompleter(
         return ResolvedKotlinCall.CompletedResolvedKotlinCall(completedCall, competedCalls, c.lambdaArguments)
     }
 
-    private fun KotlinResolutionCandidate.toCompletedCall(c: Context, substitutor: NewTypeSubstitutor): CompletedKotlinCall {
+    private fun KotlinResolutionCandidate.toCompletedCall(c: Context, substitutor: NewTypeSubstitutor, isOuterCall: Boolean): CompletedKotlinCall {
         if (this is VariableAsFunctionKotlinResolutionCandidate) {
-            val variable = resolvedVariable.toCompletedCall(c, substitutor)
-            val invoke = invokeCandidate.toCompletedCall(c, substitutor)
+            val variable = resolvedVariable.toCompletedCall(c, substitutor, isOuterCall)
+            val invoke = invokeCandidate.toCompletedCall(c, substitutor, isOuterCall)
 
             return CompletedKotlinCall.VariableAsFunction(kotlinCall, variable, invoke)
         }
-        return (this as SimpleKotlinResolutionCandidate).toCompletedCall(c, substitutor)
+        return (this as SimpleKotlinResolutionCandidate).toCompletedCall(c, substitutor, isOuterCall)
     }
 
-    private fun SimpleKotlinResolutionCandidate.toCompletedCall(c: Context, substitutor: NewTypeSubstitutor): CompletedKotlinCall.Simple {
+    private fun SimpleKotlinResolutionCandidate.toCompletedCall(c: Context, substitutor: NewTypeSubstitutor, isOuterCall: Boolean): CompletedKotlinCall.Simple {
         val containsCapturedTypes = descriptorWithFreshTypes.returnType?.contains { it is NewCapturedType } ?: false
         val resultingDescriptor = when {
             descriptorWithFreshTypes is FunctionDescriptor ||
@@ -156,7 +156,7 @@ class KotlinCallCompleter(
             TypeApproximator().approximateToSuperType(substituted, TypeApproximatorConfiguration.CapturedTypesApproximation) ?: substituted
         }
 
-        val status = computeStatus(c, this, resultingDescriptor)
+        val status = computeStatus(c, this, resultingDescriptor, isOuterCall)
         return CompletedKotlinCall.Simple(kotlinCall, candidateDescriptor, resultingDescriptor, status, explicitReceiverKind,
                                           dispatchReceiverArgument?.receiver, extensionReceiver?.receiver, typeArguments, argumentMappingByOriginal)
     }
@@ -164,10 +164,11 @@ class KotlinCallCompleter(
     private fun computeStatus(
             c: Context,
             candidate: SimpleKotlinResolutionCandidate,
-            resultingDescriptor: CallableDescriptor
+            resultingDescriptor: CallableDescriptor,
+            isOuterCall: Boolean
     ): ResolutionCandidateStatus {
         val smartCasts = additionalDiagnosticReporter.createAdditionalDiagnostics(candidate, resultingDescriptor)
-        val constraintSystemDiagnostics = handleDiagnostics(c, candidate.status)
+        val constraintSystemDiagnostics = handleDiagnostics(c, candidate.status, isOuterCall)
 
         if (smartCasts.isEmpty() && constraintSystemDiagnostics.isEmpty()) return candidate.status
 

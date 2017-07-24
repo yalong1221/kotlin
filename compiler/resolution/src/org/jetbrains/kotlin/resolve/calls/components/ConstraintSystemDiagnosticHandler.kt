@@ -22,8 +22,8 @@ import org.jetbrains.kotlin.resolve.calls.inference.model.*
 import org.jetbrains.kotlin.resolve.calls.tower.ResolutionCandidateApplicability
 import org.jetbrains.kotlin.resolve.calls.tower.ResolutionCandidateStatus
 
-fun handleDiagnostics(c: Context, status: ResolutionCandidateStatus): List<AggregatedConstraintError> {
-    val positionErrors = groupErrorsByPosition(c, status)
+fun handleDiagnostics(c: Context, status: ResolutionCandidateStatus, isOuterCall: Boolean): List<AggregatedConstraintError> {
+    val positionErrors = groupErrorsByPosition(c, status, isOuterCall)
     val constraintSystemDiagnostics = mutableListOf<AggregatedConstraintError>()
     for ((position, incorporationPositionsWithTypeVariables) in positionErrors) {
         val variablesWithConstraints = incorporationPositionsWithTypeVariables.mapNotNull { (_, typeVariable) ->
@@ -55,8 +55,8 @@ private fun divideByConstraints(variableWithConstraints: VariableWithConstraints
 
 private fun List<Constraint>.getWith(kind: ConstraintKind) = filter { it.kind == kind }
 
-private fun groupErrorsByPosition(c: Context, status: ResolutionCandidateStatus): Map<ConstraintPosition, List<PositionWithTypeVariable>> {
-    val errorsFromConstraintSystem = if (c is NewConstraintSystem) c.diagnostics else emptyList()
+private fun groupErrorsByPosition(c: Context, status: ResolutionCandidateStatus, isOuterCall: Boolean): Map<ConstraintPosition, List<PositionWithTypeVariable>> {
+    val errorsFromConstraintSystem = if (c is NewConstraintSystem && isOuterCall) c.diagnostics else emptyList()
     return (status.diagnostics + errorsFromConstraintSystem)
             .filterIsInstance<NewConstraintError>()
             .filter { it.candidateApplicability != ResolutionCandidateApplicability.INAPPLICABLE_WRONG_RECEIVER }

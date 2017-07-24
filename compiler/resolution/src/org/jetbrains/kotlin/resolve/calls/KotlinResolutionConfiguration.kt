@@ -38,15 +38,22 @@ class Inv1<K>
 
 //fun <T> foo(x: T, l: (T) -> Unit) {}
 
-fun <T : Number> foo(x: T, l: () -> T) {
+fun <T> foo(x: T, l: () -> T) {
 }
 
-fun ttest() {
-//    foo(1) {
-//        val s = ""
-//        s
+//fun <T> onlyLambda(l: () -> T) {}
+//
+//fun testLambdaWithReturns(): Int {
+//    return onlyLambda {
+//        if (3 > 2) {
+//            return@onlyLambda "not a number"
+//        }
+//        if (3 < 2) {
+//            return "also not an int"
+//        }
+//        if (true) "something" else 123
 //    }
-}
+//}
 
 //fun <T> foo()
 //
