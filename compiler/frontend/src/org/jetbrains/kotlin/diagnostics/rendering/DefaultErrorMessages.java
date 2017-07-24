@@ -578,8 +578,8 @@ public class DefaultErrorMessages {
         MAP.put(NEW_INFERENCE_DIAGNOSTIC, "New inference [{0}]", STRING);
 
         MAP.put(CONTRADICTION_IN_CONSTRAINT_SYSTEM,
-                "Type variable ''{0}'' cannot be inferred because of incompatible bounds:\n {1}",
-                TO_STRING, SORTED_CONSTRAINTS_RENDERER);
+                "Type variable ''{0}'' cannot be inferred because of incompatible bounds:\n{1}",
+                NEW_TYPE_VARIABLE_RENDERER, SORTED_CONSTRAINTS_RENDERER);
 
         MAP.put(UNSUPPORTED_FEATURE, "{0}", new LanguageFeatureMessageRenderer(LanguageFeatureMessageRenderer.Type.UNSUPPORTED));
         MAP.put(EXPERIMENTAL_FEATURE_WARNING, "{0}", new LanguageFeatureMessageRenderer(LanguageFeatureMessageRenderer.Type.WARNING));

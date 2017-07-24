@@ -26,7 +26,10 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.UnwrappedType
 
 
-sealed class ConstraintPosition
+sealed class ConstraintPosition {
+    open val message: String?
+        get() = toString()
+}
 
 class ExplicitTypeParameterConstraintPosition(val typeArgument: SimpleTypeArgument) : ConstraintPosition() {
     override fun toString() = "TypeParameter $typeArgument"
@@ -35,9 +38,12 @@ class ExpectedTypeConstraintPosition(val topLevelCall: KotlinCall) : ConstraintP
     override fun toString() = "ExpectedType for call $topLevelCall"
 }
 class DeclaredUpperBoundConstraintPosition(val typeParameterDescriptor: TypeParameterDescriptor) : ConstraintPosition() {
+    override val message get() = "declared upper bound ${typeParameterDescriptor.name}"
     override fun toString() = "DeclaredUpperBound ${typeParameterDescriptor.name} from ${typeParameterDescriptor.containingDeclaration}"
 }
 class ArgumentConstraintPosition(val argument: KotlinCallArgument) : ConstraintPosition() {
+    override val message
+        get() = if (argument.argumentName != null) "argument $argument" else null
     override fun toString() = "Argument $argument"
 }
 

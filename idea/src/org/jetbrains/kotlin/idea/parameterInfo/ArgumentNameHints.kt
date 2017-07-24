@@ -20,8 +20,6 @@ import com.intellij.codeInsight.hints.InlayInfo
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.analyze
-import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
-import org.jetbrains.kotlin.idea.core.resolveCandidates
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
@@ -37,17 +35,18 @@ fun provideArgumentNameHints(element: KtCallExpression): List<InlayInfo> {
     if (resolvedCall != null) {
         return getParameterInfoForCallCandidate(resolvedCall)
     }
-    val candidates = call.resolveCandidates(ctx, element.getResolutionFacade())
-    if (candidates.isEmpty()) return emptyList()
-    candidates.singleOrNull()?.let { return getParameterInfoForCallCandidate(it) }
-    return candidates.map { getParameterInfoForCallCandidate(it) }.reduce { infos1, infos2 ->
-        for (index in infos1.indices) {
-            if (index >= infos2.size || infos1[index] != infos2[index]) {
-                return@reduce infos1.subList(0, index)
-            }
-        }
-        infos1
-    }
+    return emptyList()
+//    val candidates = call.resolveCandidates(ctx, element.getResolutionFacade())
+//    if (candidates.isEmpty()) return emptyList()
+//    candidates.singleOrNull()?.let { return getParameterInfoForCallCandidate(it) }
+//    return candidates.map { getParameterInfoForCallCandidate(it) }.reduce { infos1, infos2 ->
+//        for (index in infos1.indices) {
+//            if (index >= infos2.size || infos1[index] != infos2[index]) {
+//                return@reduce infos1.subList(0, index)
+//            }
+//        }
+//        infos1
+//    }
 }
 
 private fun getParameterInfoForCallCandidate(resolvedCall: ResolvedCall<out CallableDescriptor>): List<InlayInfo> {

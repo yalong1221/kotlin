@@ -45,6 +45,8 @@ import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.Constrain
 import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.ConstraintPositionKind.*
 import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.getValidityConstraintForConstituentType
 import org.jetbrains.kotlin.resolve.calls.inference.model.Constraint
+import org.jetbrains.kotlin.resolve.calls.inference.model.NewTypeVariable
+import org.jetbrains.kotlin.resolve.calls.inference.model.TypeVariableTypeConstructor
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.getMultiTargetPlatform
 import org.jetbrains.kotlin.types.*
@@ -184,6 +186,11 @@ object Renderers {
         renderCannotCaptureTypeParameterError(it, TabledDescriptorRenderer.create()).toString()
     }
 
+    @JvmField val NEW_TYPE_VARIABLE_RENDERER = Renderer<NewTypeVariable> {
+        val typeConstructor = it.freshTypeConstructor
+        if (typeConstructor is TypeVariableTypeConstructor) typeConstructor.debugName else typeConstructor.toString()
+    }
+
     @JvmField val SORTED_CONSTRAINTS_RENDERER = Renderer<SortedConstraints> {
         buildString {
             appendIfNotEmpty(it.upper, "upper bounds: ")
@@ -195,7 +202,10 @@ object Renderers {
     private fun StringBuilder.appendIfNotEmpty(constraints: List<Constraint>, prefix: String, newLine: Boolean = true) {
         if (constraints.isEmpty()) return
         append(prefix)
-        append(constraints.joinToString { it.type.toString() }) // Render properly
+        append(constraints.joinToString {
+            val from = it.position.from.message?.let { " (from $it)" } ?: ""
+            "${it.type}$from"
+        }) // Render properly
         if (newLine) append("\n")
     }
 

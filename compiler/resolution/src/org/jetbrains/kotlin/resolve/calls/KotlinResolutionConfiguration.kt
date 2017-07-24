@@ -19,3 +19,37 @@ package org.jetbrains.kotlin.resolve.calls
 val USE_NEW_INFERENCE = true
 
 val REPORT_MISSING_NEW_INFERENCE_DIAGNOSTIC = true
+
+class Inv1<K>
+
+//fun <T> foo(x: T, l: (T) -> Unit) {}
+//
+//fun test() {
+//    foo("", { x: Byte? -> })
+//}
+
+//fun <K> subCallNullableUpperBound(): Inv1<K> = TODO()
+//fun <K : Any> subCallNullable(): Inv1<K?> = TODO()
+//
+//fun <S> test() {
+//    foo1(subCallNullableUpperBound<S>())
+//    foo1(subCallNullable<S>())
+//}
+
+//fun <T> foo(x: T, l: (T) -> Unit) {}
+
+fun <T : Number> foo(x: T, l: () -> T) {
+}
+
+fun ttest() {
+//    foo(1) {
+//        val s = ""
+//        s
+//    }
+}
+
+//fun <T> foo()
+//
+//fun test() {
+//    foo("", { x: Byte? -> })
+//}

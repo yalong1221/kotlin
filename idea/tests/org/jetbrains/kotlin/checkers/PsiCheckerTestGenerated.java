@@ -1015,5 +1015,23 @@ public class PsiCheckerTestGenerated extends AbstractPsiCheckerTest {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/operatorCallDiagnosticsOnInOperator.kt");
             doTest(fileName);
         }
+
+        @TestMetadata("wrongBoundsFromLambda.kt")
+        public void testWrongBoundsFromLambda() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/wrongBoundsFromLambda.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("wrongTypeArgument.kt")
+        public void testWrongTypeArgument() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/wrongTypeArgument.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("wrongUpperBoundVariable.kt")
+        public void testWrongUpperBoundVariable() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/wrongUpperBoundVariable.kt");
+            doTest(fileName);
+        }
     }
 }
