@@ -17,7 +17,9 @@
 package org.jetbrains.kotlin.resolve.calls.inference.model
 
 import org.jetbrains.kotlin.resolve.calls.inference.trimToSize
-import org.jetbrains.kotlin.resolve.calls.model.*
+import org.jetbrains.kotlin.resolve.calls.model.KotlinCallDiagnostic
+import org.jetbrains.kotlin.resolve.calls.model.PostponedKotlinCallArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedKotlinCall
 import org.jetbrains.kotlin.types.TypeConstructor
 import org.jetbrains.kotlin.types.UnwrappedType
 import java.util.*
@@ -41,6 +43,7 @@ class MutableVariableWithConstraints(
 
         val actualConstraint = if (previousConstraintWithSameType.isNotEmpty()) {
             // i.e. previous is LOWER and new is UPPER or opposite situation
+            mutableConstraints.removeAll(previousConstraintWithSameType)
             Constraint(ConstraintKind.EQUALITY, constraint.type, constraint.position, constraint.typeHashCode)
         }
         else {
