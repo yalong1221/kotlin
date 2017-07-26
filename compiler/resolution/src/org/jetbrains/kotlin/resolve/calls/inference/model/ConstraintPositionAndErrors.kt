@@ -36,6 +36,9 @@ class ExplicitTypeParameterConstraintPosition(val typeArgument: SimpleTypeArgume
     override fun toString() = "TypeParameter $typeArgument"
 }
 class ExpectedTypeConstraintPosition(val topLevelCall: KotlinCall) : ConstraintPosition() {
+    override val message: String?
+        get() = "expected type for '${topLevelCall.name.asString()}'"
+
     override fun toString() = "ExpectedType for call $topLevelCall"
 }
 class DeclaredUpperBoundConstraintPosition(val typeParameterDescriptor: TypeParameterDescriptor) : ConstraintPosition() {

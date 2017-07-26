@@ -20,52 +20,17 @@ val USE_NEW_INFERENCE = true
 
 val REPORT_MISSING_NEW_INFERENCE_DIAGNOSTIC = true
 
-fun <T : S, S : Number> upp(x: T) {}
 
-fun <T> foo(x: Int) {
-    upp(x)
-}
+//class Inv<T>
+//fun <T : S, S : K, K> foo(x: T, y: S, z: Inv<K>) {}
+//
+//fun test(inv: Inv<Double>) {
+//    foo("", "", inv)
+//}
 
-//fun <T> foo(x: T, l: (T) -> Unit) {}
+//fun <T : S, S : Number> foo(x: T, y: S) {}
 //
 //fun test() {
-//    foo("", { x: Byte? -> })
+//    foo(123, "")
 //}
 
-//fun <K> subCallNullableUpperBound(): Inv1<K> = TODO()
-//fun <K : Any> subCallNullable(): Inv1<K?> = TODO()
-//
-//fun <S> test() {
-//    foo1(subCallNullableUpperBound<S>())
-//    foo1(subCallNullable<S>())
-//}
-
-fun <T> foo(x: T, l: (T) -> Unit) {}
-//class Inv1<K>
-//class Out1<out K>
-//
-//fun <T> foo(x: T, i1: Inv1<T>, o1: Out1<T>, y: T) {}
-//
-//fun ttest(i: Inv1<Int>, o: Out1<String>) {
-//    foo(1.0, i, o, "")
-//}
-
-//fun <T> onlyLambda(l: () -> T) {}
-//
-//fun testLambdaWithReturns(): Int {
-//    return onlyLambda {
-//        if (3 > 2) {
-//            return@onlyLambda "not a number"
-//        }
-//        if (3 < 2) {
-//            return "also not an int"
-//        }
-//        if (true) "something" else 123
-//    }
-//}
-
-//fun <T> foo()
-//
-//fun test() {
-//    foo("", { x: Byte? -> })
-//}

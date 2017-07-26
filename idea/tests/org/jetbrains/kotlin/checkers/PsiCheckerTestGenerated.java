@@ -998,6 +998,12 @@ public class PsiCheckerTestGenerated extends AbstractPsiCheckerTest {
             doTest(fileName);
         }
 
+        @TestMetadata("dependentTypeVariablesDiagnostic.kt")
+        public void testDependentTypeVariablesDiagnostic() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/dependentTypeVariablesDiagnostic.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("incompleteTypeArgumentList.kt")
         public void testIncompleteTypeArgumentList() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/incompleteTypeArgumentList.kt");
@@ -1037,6 +1043,12 @@ public class PsiCheckerTestGenerated extends AbstractPsiCheckerTest {
         @TestMetadata("wrongExtraConstraints.kt")
         public void testWrongExtraConstraints() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/wrongExtraConstraints.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("wrongLambdaWithExpectedType.kt")
+        public void testWrongLambdaWithExpectedType() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/wrongLambdaWithExpectedType.kt");
             doTest(fileName);
         }
 
