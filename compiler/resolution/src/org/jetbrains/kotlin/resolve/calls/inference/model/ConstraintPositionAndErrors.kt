@@ -44,7 +44,7 @@ class DeclaredUpperBoundConstraintPosition(val typeParameterDescriptor: TypePara
 }
 class ArgumentConstraintPosition(val argument: KotlinCallArgument, val parameterName: Name? = null) : ConstraintPosition() {
     override val message
-        get() = if (parameterName != null) "argument for parameter '$parameterName'" else null
+        get() = if (parameterName != null) "for parameter '$parameterName'" else null
     override fun toString() = "Argument $argument"
 }
 
@@ -93,5 +93,10 @@ class NotEnoughInformationForTypeParameter(val typeVariable: NewTypeVariable) : 
 class AggregatedConstraintError(
         val constraintPosition: ConstraintPosition,
         val typeVariable: NewTypeVariable,
+        val specialTypeVariableKind: SpecialTypeVariableKind?,
         val sortedConstraints: SortedConstraints
 ) : ConstraintSystemCallDiagnostic(INAPPLICABLE)
+
+enum class SpecialTypeVariableKind(val expressionName: String) {
+    IF("if"), ELVIS("elvis"), WHEN("when")
+}

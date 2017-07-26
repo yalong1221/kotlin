@@ -20,6 +20,12 @@ val USE_NEW_INFERENCE = true
 
 val REPORT_MISSING_NEW_INFERENCE_DIAGNOSTIC = true
 
+fun <T : S, S : Number> upp(x: T) {}
+
+fun <T> foo(x: Int) {
+    upp(x)
+}
+
 //fun <T> foo(x: T, l: (T) -> Unit) {}
 //
 //fun test() {
@@ -34,7 +40,7 @@ val REPORT_MISSING_NEW_INFERENCE_DIAGNOSTIC = true
 //    foo1(subCallNullable<S>())
 //}
 
-//fun <T> foo(x: T, l: (T) -> Unit) {}
+fun <T> foo(x: T, l: (T) -> Unit) {}
 //class Inv1<K>
 //class Out1<out K>
 //

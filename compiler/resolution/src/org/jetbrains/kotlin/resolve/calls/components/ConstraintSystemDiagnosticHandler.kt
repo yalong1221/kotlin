@@ -38,7 +38,7 @@ fun handleDiagnostics(c: Context, status: ResolutionCandidateStatus, isOuterCall
         // Each position can refer to the same type variables, we'll fix it later
         // Also, probably it's enough to show error only about one type parameter
         variablesWithConstraints.mapTo(constraintSystemDiagnostics) {
-            AggregatedConstraintError(position, it.typeVariable, divideByConstraints(it))
+            AggregatedConstraintError(position, it.typeVariable, extractKind(it.typeVariable), divideByConstraints(it))
         }
     }
 
@@ -46,6 +46,21 @@ fun handleDiagnostics(c: Context, status: ResolutionCandidateStatus, isOuterCall
 }
 
 data class SortedConstraints(val upper: List<Constraint>, val equality: List<Constraint>, val lower: List<Constraint>)
+
+private fun extractKind(typeVariable: NewTypeVariable): SpecialTypeVariableKind? {
+    val freshTypeConstructor = typeVariable.freshTypeConstructor
+    if (freshTypeConstructor !is TypeVariableTypeConstructor) return null
+
+    val name = freshTypeConstructor.debugName
+    return SPECIAL_TYPE_PARAMETER_NAME_TO_KIND[name]
+}
+
+// TODO: Get names of type parameters from ControlStructureTypingUtils.ResolveConstruct
+private val SPECIAL_TYPE_PARAMETER_NAME_TO_KIND = mapOf(
+        "<TYPE-PARAMETER-FOR-IF-RESOLVE>" to SpecialTypeVariableKind.IF,
+        "<TYPE-PARAMETER-FOR-WHEN-RESOLVE>" to SpecialTypeVariableKind.WHEN,
+        "<TYPE-PARAMETER-FOR-ELVIS-RESOLVE>" to SpecialTypeVariableKind.ELVIS
+)
 
 private fun divideByConstraints(variableWithConstraints: VariableWithConstraints): SortedConstraints {
     return with(variableWithConstraints.constraints) {

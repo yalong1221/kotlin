@@ -46,6 +46,7 @@ import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.Constrain
 import org.jetbrains.kotlin.resolve.calls.inference.constraintPosition.getValidityConstraintForConstituentType
 import org.jetbrains.kotlin.resolve.calls.inference.model.Constraint
 import org.jetbrains.kotlin.resolve.calls.inference.model.NewTypeVariable
+import org.jetbrains.kotlin.resolve.calls.inference.model.SpecialTypeVariableKind
 import org.jetbrains.kotlin.resolve.calls.inference.model.TypeVariableTypeConstructor
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.getMultiTargetPlatform
@@ -191,11 +192,23 @@ object Renderers {
         if (typeConstructor is TypeVariableTypeConstructor) typeConstructor.debugName else typeConstructor.toString()
     }
 
+    @JvmField val SPECIAL_VARIABLE_KIND_RENDERER = Renderer<SpecialTypeVariableKind> {
+        it.expressionName
+    }
+
     @JvmField val SORTED_CONSTRAINTS_RENDERER = Renderer<SortedConstraints> {
         buildString {
-            appendIfNotEmpty(it.upper, "upper bounds: ")
-            appendIfNotEmpty(it.equality, "equality constraints: ")
-            appendIfNotEmpty(it.lower, "lower bounds: ", false)
+            appendIfNotEmpty(it.upper, "should be a subtype of: ")
+            appendIfNotEmpty(it.equality, "should be equal to: ")
+            appendIfNotEmpty(it.lower, "should be a supertype of: ", false)
+        }
+    }
+
+    @JvmField val SORTED_CONSTRAINTS_FOR_SPECIAL_CALL_RENDERER = Renderer<SortedConstraints> {
+        buildString {
+            appendIfNotEmpty(it.upper, "should be conformed to: ")
+            appendIfNotEmpty(it.equality, "should be equal to: ")
+            appendIfNotEmpty(it.lower, "should be a supertype of: ", false)
         }
     }
 
@@ -203,7 +216,7 @@ object Renderers {
         if (constraints.isEmpty()) return
         append(prefix)
         append(constraints.joinToString {
-            val from = it.position.from.message?.let { " (from $it)" } ?: ""
+            val from = it.position.from.message?.let { " ($it)" } ?: ""
             "${it.type}$from"
         }) // Render properly
         if (newLine) append("\n")
