@@ -38,7 +38,8 @@ fun handleDiagnostics(c: Context, status: ResolutionCandidateStatus, isOuterCall
         // Each position can refer to the same type variables, we'll fix it later
         // Also, probably it's enough to show error only about one type parameter
         variablesWithConstraints.mapTo(constraintSystemDiagnostics) {
-            AggregatedConstraintError(position, it.typeVariable, extractKind(it.typeVariable), divideByConstraints(it))
+            val properConstraints = it.constraints.filter { constraint -> c.canBeProper(constraint.type) }
+            AggregatedConstraintError(position, it.typeVariable, extractKind(it.typeVariable), divideByConstraints(properConstraints))
         }
     }
 
@@ -62,8 +63,8 @@ private val SPECIAL_TYPE_PARAMETER_NAME_TO_KIND = mapOf(
         "<TYPE-PARAMETER-FOR-ELVIS-RESOLVE>" to SpecialTypeVariableKind.ELVIS
 )
 
-private fun divideByConstraints(variableWithConstraints: VariableWithConstraints): SortedConstraints {
-    return with(variableWithConstraints.constraints) {
+private fun divideByConstraints(constraints: List<Constraint>): SortedConstraints {
+    return with(constraints) {
         SortedConstraints(getWith(ConstraintKind.UPPER), getWith(ConstraintKind.EQUALITY), getWith(ConstraintKind.LOWER))
     }
 }
