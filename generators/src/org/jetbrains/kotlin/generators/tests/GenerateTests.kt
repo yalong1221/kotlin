@@ -270,11 +270,11 @@ fun main(args: Array<String>) {
             model("ir/box", targetBackend = TargetBackend.JVM)
         }
 
-        testClass<AbstractBlackBoxInlineCodegenTest>("BlackBoxInlineCodegenTestGenerated") {
+        testClass<AbstractBlackBoxInlineCodegenTest> {
             model("codegen/boxInline")
         }
 
-        testClass<AbstractCompileKotlinAgainstInlineKotlinTest>("CompileKotlinAgainstInlineKotlinTestGenerated") {
+        testClass<AbstractCompileKotlinAgainstInlineKotlinTest> {
             model("codegen/boxInline")
         }
 
@@ -886,19 +886,19 @@ fun main(args: Array<String>) {
             model("expressionSelection", testMethod = "doTestExpressionSelection", pattern = KT_WITHOUT_DOTS_IN_NAME)
         }
 
-        testClass(AbstractCommonDecompiledTextTest::class.java) {
+        testClass<AbstractCommonDecompiledTextTest> {
             model("decompiler/decompiledText", pattern = """^([^\.]+)$""")
         }
 
-        testClass(AbstractJvmDecompiledTextTest::class.java) {
+        testClass<AbstractJvmDecompiledTextTest> {
             model("decompiler/decompiledTextJvm", pattern = """^([^\.]+)$""")
         }
 
-        testClass(AbstractCommonDecompiledTextFromJsMetadataTest::class.java) {
+        testClass<AbstractCommonDecompiledTextFromJsMetadataTest> {
             model("decompiler/decompiledText", pattern = """^([^\.]+)$""", targetBackend = TargetBackend.JS)
         }
 
-        testClass(AbstractJsDecompiledTextFromJsMetadataTest::class.java) {
+        testClass<AbstractJsDecompiledTextFromJsMetadataTest> {
             model("decompiler/decompiledTextJs", pattern = """^([^\.]+)$""", targetBackend = TargetBackend.JS)
         }
 
@@ -1141,7 +1141,7 @@ fun main(args: Array<String>) {
             model("smartMultiFile", extension = null, recursive = false)
         }
 
-        testClass<AbstractJvmBasicCompletionTest>("org.jetbrains.kotlin.idea.completion.test.KDocCompletionTestGenerated") {
+        testClass<AbstractJvmBasicCompletionTest>("KDocCompletionTestGenerated") {
             model("kdoc")
         }
 
@@ -1149,7 +1149,7 @@ fun main(args: Array<String>) {
             model("basic/java8")
         }
 
-        testClass<AbstractCompletionIncrementalResolveTest>() {
+        testClass<AbstractCompletionIncrementalResolveTest> {
             model("incrementalResolve")
         }
     }
@@ -1192,11 +1192,11 @@ fun main(args: Array<String>) {
             model("incremental/lookupTracker", extension = null, recursive = false)
         }
 
-        testClass(AbstractIncrementalLazyCachesTest::class.java) {
+        testClass<AbstractIncrementalLazyCachesTest> {
             model("incremental/lazyKotlinCaches", extension = null, excludeParentDirs = true)
         }
 
-        testClass(AbstractIncrementalCacheVersionChangedTest::class.java) {
+        testClass<AbstractIncrementalCacheVersionChangedTest> {
             model("incremental/cacheVersionChanged", extension = null, excludeParentDirs = true)
         }
     }
@@ -1432,32 +1432,24 @@ fun main(args: Array<String>) {
     }
 }
 
-class TestGroup(val testsRoot: String, val testDataRoot: String) {
+class TestGroup(private val testsRoot: String, val testDataRoot: String) {
     inline fun <reified T: TestCase> testClass(
-            suiteTestClass: String = getDefaultSuiteTestClass(T::class.java),
+            suiteTestClassName: String = getDefaultSuiteTestClassName(T::class.java.simpleName),
             noinline init: TestClass.() -> Unit
     ) {
-        testClass(T::class.java, suiteTestClass, init)
+        testClass(T::class.java.name, suiteTestClassName, init)
     }
 
     fun testClass(
-            baseTestClass: Class<out TestCase>,
-            suiteTestClass: String = getDefaultSuiteTestClass(baseTestClass),
+            baseTestClassName: String,
+            suiteTestClassName: String = getDefaultSuiteTestClassName(baseTestClassName.substringAfterLast('.')),
             init: TestClass.() -> Unit
     ) {
-        val testClass = TestClass()
-        testClass.init()
-
-        val lastDot = suiteTestClass.lastIndexOf('.')
-        val suiteTestClassName = if (lastDot == -1) suiteTestClass else suiteTestClass.substring(lastDot+1)
-        val suiteTestClassPackage = if (lastDot == -1) baseTestClass.`package`.name else suiteTestClass.substring(0, lastDot)
-
         TestGenerator(
                 testsRoot,
-                suiteTestClassPackage,
                 suiteTestClassName,
-                baseTestClass,
-                testClass.testModels
+                baseTestClassName,
+                TestClass().apply(init).testModels
         ).generateAndSave()
     }
 
@@ -1495,17 +1487,15 @@ class TestGroup(val testsRoot: String, val testDataRoot: String) {
             )
         }
     }
-
 }
 
 fun testGroup(testsRoot: String, testDataRoot: String, init: TestGroup.() -> Unit) {
     TestGroup(testsRoot, testDataRoot).init()
 }
 
-fun getDefaultSuiteTestClass(baseTestClass:Class<*>): String {
-    val baseName = baseTestClass.simpleName
-    if (!baseName.startsWith("Abstract")) {
-        throw IllegalArgumentException("Doesn't start with \"Abstract\": $baseName")
+fun getDefaultSuiteTestClassName(baseTestClassName: String): String {
+    if (!baseTestClassName.startsWith("Abstract")) {
+        throw IllegalArgumentException("Doesn't start with \"Abstract\": $baseTestClassName")
     }
-    return baseName.substring("Abstract".length) + "Generated"
+    return baseTestClassName.substringAfter("Abstract") + "Generated"
 }
