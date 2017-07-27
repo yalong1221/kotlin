@@ -21,4 +21,4 @@ workspace.xml
 .gradle/
 build/
 !**/src/**/build
-
+!**/test/**/build
