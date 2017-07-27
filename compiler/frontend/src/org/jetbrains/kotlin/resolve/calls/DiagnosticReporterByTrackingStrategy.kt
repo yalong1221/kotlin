@@ -184,17 +184,24 @@ class DiagnosticReporterByTrackingStrategy(
             AggregatedConstraintError::class.java -> {
                 val constraintError = diagnostic as AggregatedConstraintError
                 val position = constraintError.constraintPosition
-                (position as? ArgumentConstraintPosition)?.let {
-                    val expression = it.argument.psiExpression ?: return
-                    val specialTypeVariableKind = constraintError.specialTypeVariableKind
-                    if (specialTypeVariableKind != null) {
-                        trace.report(CONTRADICTION_FOR_SPECIAL_CALL.on(expression, constraintError.sortedConstraints, specialTypeVariableKind))
-                    }
-                    else {
-                        trace.report(CONTRADICTION_IN_CONSTRAINT_SYSTEM.on(expression, constraintError.typeVariable, constraintError.sortedConstraints))
-                    }
+                val expression = extractExpressionToReport(position) ?: return
+
+                val specialTypeVariableKind = constraintError.specialTypeVariableKind
+                if (specialTypeVariableKind != null) {
+                    trace.report(CONTRADICTION_FOR_SPECIAL_CALL.on(expression, constraintError.sortedConstraints, specialTypeVariableKind))
+                }
+                else {
+                    trace.report(CONTRADICTION_IN_CONSTRAINT_SYSTEM.on(expression, constraintError.typeVariable, constraintError.sortedConstraints))
                 }
             }
+        }
+    }
+
+    private fun extractExpressionToReport(position: ConstraintPosition): KtExpression? {
+        return when (position) {
+            is ArgumentConstraintPosition -> position.argument.psiExpression
+            is ExpectedTypeConstraintPosition -> position.topLevelCall.psiKotlinCall.psiCall.calleeExpression
+            else -> null
         }
     }
 

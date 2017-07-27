@@ -1034,6 +1034,12 @@ public class PsiCheckerTestGenerated extends AbstractPsiCheckerTest {
             doTest(fileName);
         }
 
+        @TestMetadata("superConstructorCallDiagnostic.kt")
+        public void testSuperConstructorCallDiagnostic() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/superConstructorCallDiagnostic.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("wrongBoundsFromLambda.kt")
         public void testWrongBoundsFromLambda() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/wrongBoundsFromLambda.kt");
@@ -1049,6 +1055,12 @@ public class PsiCheckerTestGenerated extends AbstractPsiCheckerTest {
         @TestMetadata("wrongLambdaWithExpectedType.kt")
         public void testWrongLambdaWithExpectedType() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/wrongLambdaWithExpectedType.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("wrongSubcallDiagnostic.kt")
+        public void testWrongSubcallDiagnostic() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/checker/diagnosticsMessage/wrongSubcallDiagnostic.kt");
             doTest(fileName);
         }
 
