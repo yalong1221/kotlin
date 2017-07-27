@@ -14,3 +14,9 @@ fun <T : S, S : K, K> bar(x: T, y: S, z: Inv<K>) {}
 fun test3(inv: Inv<Double>) {
     bar("", "", inv)
 }
+
+fun <T : S, S> bar(x: Inv<T>, y: Inv<S>) {}
+
+fun test4(a: Inv<Int>, b: Inv<String>) {
+    bar(a, b)
+}

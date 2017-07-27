@@ -19,18 +19,3 @@ package org.jetbrains.kotlin.resolve.calls
 val USE_NEW_INFERENCE = true
 
 val REPORT_MISSING_NEW_INFERENCE_DIAGNOSTIC = true
-
-
-//class Inv<T>
-//fun <T : S, S : K, K> foo(x: T, y: S, z: Inv<K>) {}
-//
-//fun test(inv: Inv<Double>) {
-//    foo("", "", inv)
-//}
-
-//fun <T : S, S : Number> foo(x: T, y: S) {}
-//
-//fun test() {
-//    foo(123, "")
-//}
-
