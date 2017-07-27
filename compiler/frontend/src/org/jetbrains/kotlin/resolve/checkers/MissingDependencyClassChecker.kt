@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedContainerSource
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedMemberDescriptor
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.utils.newLinkedHashSetWithExpectedSize
 
 object MissingDependencyClassChecker : CallChecker {
@@ -46,6 +47,14 @@ object MissingDependencyClassChecker : CallChecker {
     private fun diagnosticFor(descriptor: ClassifierDescriptor, reportOn: PsiElement): Diagnostic? {
         if (descriptor is NotFoundClasses.MockClassDescriptor) {
             return MISSING_DEPENDENCY_CLASS.on(reportOn, descriptor.fqNameSafe)
+        }
+
+        val type = (descriptor as? TypeAliasDescriptor)?.expandedType ?: descriptor.defaultType
+        for (supertype in TypeUtils.getAllSupertypes(type)) {
+            val superclass = supertype.constructor.declarationDescriptor
+            if (superclass is NotFoundClasses.MockClassDescriptor) {
+                return MISSING_DEPENDENCY_SUPERCLASS.on(reportOn, superclass.fqNameSafe, descriptor.fqNameSafe)
+            }
         }
 
         return incompatibilityDiagnosticFor(descriptor.source, reportOn)
