@@ -447,19 +447,6 @@ class IncrementalJvmCompilerRunner(
         }
     }
 
-    private class MessageCollectorWrapper(
-            private val delegate: MessageCollector,
-            private val outputCollector: OutputItemsCollector
-    ) : MessageCollector by delegate {
-        override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation?) {
-            // TODO: consider adding some other way of passing input -> output mapping from compiler, e.g. dedicated service
-            OutputMessageUtil.parseOutputMessage(message)?.let {
-                outputCollector.add(it.sourceFiles, it.outputFile)
-            }
-            delegate.report(severity, message, location)
-        }
-    }
-
     companion object {
         const val CACHES_DIR_NAME = "caches"
         const val DIRTY_SOURCES_FILE_NAME = "dirty-sources.txt"
@@ -474,3 +461,16 @@ var K2JVMCompilerArguments.destinationAsFile: File
 var K2JVMCompilerArguments.classpathAsList: List<File>
     get() = classpath.split(File.pathSeparator).map(::File)
     set(value) { classpath = value.joinToString(separator = File.pathSeparator, transform = { it.path }) }
+
+private class MessageCollectorWrapper(
+        private val delegate: MessageCollector,
+        private val outputCollector: OutputItemsCollector
+) : MessageCollector by delegate {
+    override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation?) {
+        // TODO: consider adding some other way of passing input -> output mapping from compiler, e.g. dedicated service
+        OutputMessageUtil.parseOutputMessage(message)?.let {
+            outputCollector.add(it.sourceFiles, it.outputFile)
+        }
+        delegate.report(severity, message, location)
+    }
+}
