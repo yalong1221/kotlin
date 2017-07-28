@@ -90,6 +90,12 @@ public class KDocCompletionTestGenerated extends AbstractJvmBasicCompletionTest 
         doTest(fileName);
     }
 
+    @TestMetadata("NoCompletionAfterFunName.kt")
+    public void testNoCompletionAfterFunName() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("idea/idea-completion/testData/kdoc/NoCompletionAfterFunName.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("NotTagName.kt")
     public void testNotTagName() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/idea-completion/testData/kdoc/NotTagName.kt");

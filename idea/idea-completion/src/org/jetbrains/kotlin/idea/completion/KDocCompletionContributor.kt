@@ -144,19 +144,21 @@ class KDocNameCompletionSession(
     private fun collectDescriptorsForLinkCompletion(declarationDescriptor: DeclarationDescriptor, kDocLink: KDocLink): Sequence<DeclarationDescriptor> {
         val qualifiedLink = kDocLink.getLinkText().split('.').dropLast(1)
         val nameFilter = descriptorNameFilter.toNameFilter()
-        return if (qualifiedLink.isNotEmpty()) {
+        if (qualifiedLink.isNotEmpty()) {
             val parentDescriptors = resolveKDocLink(bindingContext, resolutionFacade, declarationDescriptor, kDocLink.getTagIfSubject(), qualifiedLink)
-            val childDescriptorsOfPartialLink = parentDescriptors.asSequence().flatMap {
-                val scope = getKDocLinkResolutionScope(resolutionFacade, it)
-                collectDescriptorsFromScope(scope, nameFilter, false)
-            }
+            val childDescriptorsOfPartialLink = parentDescriptors
+                    .asSequence()
+                    .filterNot { it is CallableDescriptor } // we don't need completion of any "members" of a callable
+                    .flatMap {
+                        val scope = getKDocLinkResolutionScope(resolutionFacade, it)
+                        collectDescriptorsFromScope(scope, nameFilter, false)
+                    }
 
-            (collectPackageViewDescriptors(qualifiedLink, nameFilter) + childDescriptorsOfPartialLink)
+            return collectPackageViewDescriptors(qualifiedLink, nameFilter) + childDescriptorsOfPartialLink
         }
         else {
             val scope = getKDocLinkResolutionScope(resolutionFacade, declarationDescriptor)
-            (collectDescriptorsFromScope(scope, nameFilter, true)
-             + collectPackageViewDescriptors(qualifiedLink, nameFilter))
+            return collectDescriptorsFromScope(scope, nameFilter, true) + collectPackageViewDescriptors(qualifiedLink, nameFilter)
         }
     }
 
