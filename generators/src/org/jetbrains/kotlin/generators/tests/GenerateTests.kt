@@ -159,6 +159,7 @@ import org.jetbrains.kotlin.android.synthetic.test.AbstractAndroidBytecodeShapeT
 import org.jetbrains.kotlin.android.synthetic.test.AbstractAndroidSyntheticPropertyDescriptorTest
 import org.jetbrains.kotlin.annotation.AbstractAnnotationProcessorBoxTest
 import org.jetbrains.kotlin.checkers.javac.*
+import org.jetbrains.kotlin.jvm.compiler.javac.AbstractLoadJava8UsingJavacTest
 import org.jetbrains.kotlin.modules.xml.AbstractModuleXmlParserTest
 import org.jetbrains.kotlin.multiplatform.AbstractMultiPlatformIntegrationTest
 import org.jetbrains.kotlin.noarg.AbstractBlackBoxCodegenTestForNoArg
@@ -488,6 +489,11 @@ fun main(args: Array<String>) {
         }
 
         testClass<AbstractLoadJava8Test> {
+            model("loadJava8/compiledJava", extension = "java", testMethod = "doTestCompiledJava")
+            model("loadJava8/sourceJava", extension = "java", testMethod = "doTestSourceJava")
+        }
+
+        testClass<AbstractLoadJava8UsingJavacTest> {
             model("loadJava8/compiledJava", extension = "java", testMethod = "doTestCompiledJava")
             model("loadJava8/sourceJava", extension = "java", testMethod = "doTestSourceJava")
         }
