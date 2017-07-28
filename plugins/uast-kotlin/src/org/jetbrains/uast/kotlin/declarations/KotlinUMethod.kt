@@ -21,9 +21,12 @@ import org.jetbrains.kotlin.asJava.elements.KtLightElement
 import org.jetbrains.kotlin.asJava.elements.KtLightMethod
 import org.jetbrains.kotlin.asJava.elements.isGetter
 import org.jetbrains.kotlin.asJava.elements.isSetter
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.uast.*
+import org.jetbrains.uast.java.JavaUAnnotation
+import org.jetbrains.uast.java.annotations
 import org.jetbrains.uast.java.internal.JavaUElementWithComments
 import org.jetbrains.uast.kotlin.*
 
@@ -46,7 +49,9 @@ open class KotlinUMethod(
     override fun getNameIdentifier() = UastLightIdentifier(psi, kotlinOrigin as KtNamedDeclaration?)
 
     override val annotations by lz {
-        (kotlinOrigin as? KtDeclaration)?.annotationEntries?.map { KotlinUAnnotation(it, this) } ?: emptyList()
+        psi.annotations
+                .mapNotNull { (it as? KtLightElement<*, *>)?.kotlinOrigin as? KtAnnotationEntry }
+                .map { KotlinUAnnotation(it, this) }
     }
 
     override val uastParameters by lz {
