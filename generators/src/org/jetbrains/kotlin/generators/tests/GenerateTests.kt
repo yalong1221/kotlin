@@ -162,6 +162,8 @@ import org.jetbrains.kotlin.jvm.runtime.AbstractJvmRuntimeDescriptorLoaderTest
 import org.jetbrains.kotlin.kapt3.test.AbstractClassFileToSourceStubConverterTest
 import org.jetbrains.kotlin.kapt3.test.AbstractKotlinKaptContextTest
 import org.jetbrains.kotlin.kdoc.AbstractKDocLexerTest
+import org.jetbrains.kotlin.checkers.javac.AbstractJavacForeignAnnotationsTest
+import org.jetbrains.kotlin.checkers.javac.AbstractJavacForeignJava8AnnotationsTest
 import org.jetbrains.kotlin.modules.xml.AbstractModuleXmlParserTest
 import org.jetbrains.kotlin.multiplatform.AbstractMultiPlatformIntegrationTest
 import org.jetbrains.kotlin.noarg.AbstractBlackBoxCodegenTestForNoArg
@@ -240,6 +242,10 @@ fun main(args: Array<String>) {
         }
 
         testClass<AbstractForeignAnnotationsTest> {
+            model("foreignAnnotations/tests")
+        }
+
+        testClass<AbstractJavacForeignAnnotationsTest> {
             model("foreignAnnotations/tests")
         }
 
@@ -475,6 +481,10 @@ fun main(args: Array<String>) {
         }
 
         testClass<AbstractForeignJava8AnnotationsTest> {
+            model("foreignAnnotationsJava8/tests")
+        }
+
+        testClass<AbstractJavacForeignJava8AnnotationsTest> {
             model("foreignAnnotationsJava8/tests")
         }
 
