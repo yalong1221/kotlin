@@ -193,6 +193,12 @@ public class JavacDiagnosticsTestGenerated extends AbstractJavacDiagnosticsTest 
                 doTest(fileName);
             }
 
+            @TestMetadata("InheritanceWithKotlin.kt")
+            public void testInheritanceWithKotlin() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/diagnostics/tests/inheritance/InheritanceWithKotlin.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("InheritanceWithKotlinClasses.kt")
             public void testInheritanceWithKotlinClasses() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/diagnostics/tests/inheritance/InheritanceWithKotlinClasses.kt");
@@ -574,6 +580,12 @@ public class JavacDiagnosticsTestGenerated extends AbstractJavacDiagnosticsTest 
             @TestMetadata("InheritanceAmbiguity4.kt")
             public void testInheritanceAmbiguity4() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/diagnostics/tests/inheritance/InheritanceAmbiguity4.kt");
+                doTestWithoutJavacWrapper(fileName);
+            }
+
+            @TestMetadata("InheritanceWithKotlin.kt")
+            public void testInheritanceWithKotlin() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/diagnostics/tests/inheritance/InheritanceWithKotlin.kt");
                 doTestWithoutJavacWrapper(fileName);
             }
 

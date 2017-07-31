@@ -45,31 +45,6 @@ class ClassifierResolver(private val javac: JavacWrapper) {
         }
     }
 
-    private val TreePath.enclosingClasses: List<JavaClass>
-        get() {
-            val outerClasses = filterIsInstance<JCTree.JCClassDecl>()
-                    .dropWhile { it.extending == leaf || leaf in it.implementing }
-                    .asReversed()
-                    .map { it.simpleName.toString() }
-
-            val packageName = compilationUnit.packageName?.toString() ?: ""
-            val outermostClassName = outerClasses.firstOrNull() ?: return emptyList()
-
-            val outermostClassId = classId(packageName, outermostClassName)
-            var outermostClass = javac.findClass(outermostClassId) ?: return emptyList()
-
-            val classes = arrayListOf<JavaClass>()
-            classes.add(outermostClass)
-
-            for (it in outerClasses.drop(1)) {
-                outermostClass = outermostClass.findInnerClass(Name.identifier(it))
-                                 ?: throw AssertionError("Couldn't find a class ($it) that is surely defined in ${outermostClass.fqName?.asString()}")
-                classes.add(outermostClass)
-            }
-
-            return classes.reversed()
-        }
-
     private fun pathSegments(path: String): List<String> {
         val pathSegments = arrayListOf<String>()
         var numberOfBrackets = 0
@@ -94,33 +69,9 @@ class ClassifierResolver(private val javac: JavacWrapper) {
 
     private fun TreePath.tryToResolve(): JavaClassifier? {
         val pathSegments = pathSegments(leaf.toString())
-        val firstSegment = pathSegments.first()
 
-        val asteriskImports = {
-            (compilationUnit as JCTree.JCCompilationUnit).imports
-                    .mapNotNull {
-                        val fqName = it.qualifiedIdentifier.toString()
-                        if (fqName.endsWith("*")) {
-                            fqName.dropLast(1)
-                        }
-                        else null
-                    }
-        }
-        val packageName = compilationUnit.packageName?.toString() ?: ""
-        val imports = {
-            (compilationUnit as JCTree.JCCompilationUnit).imports
-                    .mapNotNull {
-                        val fqName = it.qualifiedIdentifier.toString()
-                        if (fqName.endsWith(".$firstSegment")) {
-                            fqName
-                        }
-                        else null
-                    }
-        }
-
-        tryToGetTypeParameterFromMethod()?.let { return it }
-
-        return createResolutionScope(enclosingClasses, asteriskImports, packageName, imports).findClass(firstSegment, pathSegments)
+        return tryToGetTypeParameterFromMethod()?.let { return it } ?:
+               createResolutionScope(this).findClass(pathSegments.first(), pathSegments)
     }
 
     private fun TreePath.tryToGetTypeParameterFromMethod(): TreeBasedTypeParameter? =
@@ -132,25 +83,15 @@ class ClassifierResolver(private val javac: JavacWrapper) {
                                                javac)
                     }
 
-    internal fun createResolutionScope(enclosingClasses: List<JavaClass>,
-                                       asteriskImports: () -> List<String>,
-                                       packageName: String,
-                                       imports: () -> List<String>): Scope {
-
-        val globalScope = GlobalScope(javac, packageName)
-        val importOnDemandScope = ImportOnDemandScope(javac, globalScope, asteriskImports, packageName)
-        val packageScope = PackageScope(javac, importOnDemandScope, packageName)
-        val singleTypeImportScope = SingleTypeImportScope(javac, packageScope, imports, packageName)
-        val currentClassAndInnerScope = CurrentClassAndInnerScope(javac, singleTypeImportScope, enclosingClasses, packageName)
-
-        return currentClassAndInnerScope
-    }
+    private fun createResolutionScope(treePath: TreePath): Scope = CurrentClassAndInnerScope(javac, treePath)
 
 }
 
-internal abstract class Scope(protected val parent: Scope?,
-                              protected val javac: JavacWrapper,
-                              protected val packageName: String) {
+private abstract class Scope(protected val javac: JavacWrapper,
+                              protected val treePath: TreePath) {
+
+    abstract val parent: Scope?
+
     abstract fun findClass(name: String, pathSegments: List<String>): JavaClassifier?
 
     protected fun getJavaClassFromPathSegments(javaClass: JavaClass,
@@ -161,25 +102,6 @@ internal abstract class Scope(protected val parent: Scope?,
             else {
                 javaClass.findInnerOrNested(pathSegments.drop(1))
             }
-
-    protected fun findByFqName(pathSegments: List<String>): JavaClass? {
-        pathSegments.forEachIndexed { index, _ ->
-            if (index != 0) {
-                val packageFqName = pathSegments.take(index).joinToString(separator = ".")
-                findPackage(packageFqName)?.let { pack ->
-                    val className = pathSegments.drop(index)
-                    findJavaOrKotlinClass(ClassId(pack, Name.identifier(className.first())))?.let { javaClass ->
-                        return getJavaClassFromPathSegments(javaClass, className)
-                    }
-                }
-            }
-        }
-
-        // try to find in <root>
-        return findJavaOrKotlinClass(classId("", pathSegments.first()))?.let { javaClass ->
-            getJavaClassFromPathSegments(javaClass, pathSegments)
-        }
-    }
 
     protected fun findImport(pathSegments: List<String>): JavaClass? {
         pathSegments.forEachIndexed { index, _ ->
@@ -214,12 +136,19 @@ internal abstract class Scope(protected val parent: Scope?,
                 }.singleOrNull()
     }
 
+    protected fun findPackage(packageName: String): FqName? {
+        val fqName = if (packageName.isNotBlank()) FqName(packageName) else FqName.ROOT
+        javac.hasKotlinPackage(fqName)?.let { return it }
+
+        return javac.findPackage(fqName)?.fqName
+    }
+
     private fun JavaClass.findVisibleInnerOrNestedClass(name: Name) = findInnerClass(name)?.let { innerOrNestedClass ->
         when (innerOrNestedClass.visibility) {
             Visibilities.PRIVATE -> null
             JavaVisibilities.PACKAGE_VISIBILITY -> {
                 val classId = (innerOrNestedClass as? MockKotlinClassifier)?.classId ?: innerOrNestedClass.computeClassId()
-                if (classId?.packageFqName?.asString() == packageName) innerOrNestedClass else null
+                if (classId?.packageFqName?.asString() == (treePath.compilationUnit.packageName?.toString() ?: "")) innerOrNestedClass else null
             }
             else -> innerOrNestedClass
         }
@@ -230,20 +159,15 @@ internal abstract class Scope(protected val parent: Scope?,
                 supertypes.mapNotNull { it.classifier as? JavaClass }.forEach { addAll(it.collectAllSupertypes()) }
             }
 
-    private fun findPackage(packageName: String): FqName? {
-        val fqName = if (packageName.isNotBlank()) FqName(packageName) else FqName.ROOT
-        javac.hasKotlinPackage(fqName)?.let { return it }
-
-        return javac.findPackage(fqName)?.fqName
-    }
-
     private fun JavaClass.findInnerOrNested(pathSegments: List<String>): JavaClass? =
             pathSegments.fold(this) { javaClass, it -> javaClass.findInnerOrNested(Name.identifier(it)) ?: return null }
 
 }
 
-private class GlobalScope(javac: JavacWrapper,
-                          packageName: String) : Scope(null, javac, packageName) {
+private class GlobalScope(javac: JavacWrapper, treePath: TreePath) : Scope(javac, treePath) {
+
+    override val parent: Scope?
+        get() = null
 
     override fun findClass(name: String, pathSegments: List<String>): JavaClass? {
         findByFqName(pathSegments)?.let { return it }
@@ -253,12 +177,32 @@ private class GlobalScope(javac: JavacWrapper,
         }
     }
 
+    private fun findByFqName(pathSegments: List<String>): JavaClass? {
+        pathSegments.forEachIndexed { index, _ ->
+            if (index != 0) {
+                val packageFqName = pathSegments.take(index).joinToString(separator = ".")
+                findPackage(packageFqName)?.let { pack ->
+                    val className = pathSegments.drop(index)
+                    findJavaOrKotlinClass(ClassId(pack, Name.identifier(className.first())))?.let { javaClass ->
+                        return getJavaClassFromPathSegments(javaClass, className)
+                    }
+                }
+            }
+        }
+
+        // try to find in <root>
+        return findJavaOrKotlinClass(classId("", pathSegments.first()))?.let { javaClass ->
+            getJavaClassFromPathSegments(javaClass, pathSegments)
+        }
+    }
+
 }
 
 private class ImportOnDemandScope(javac: JavacWrapper,
-                                  scope: Scope?,
-                                  private val asteriskImports: () -> List<String>,
-                                  packageName: String) : Scope(scope, javac, packageName) {
+                                  treePath: TreePath) : Scope(javac, treePath) {
+
+    override val parent: Scope
+        get() = GlobalScope(javac, treePath)
 
     override fun findClass(name: String, pathSegments: List<String>): JavaClassifier? {
         asteriskImports()
@@ -270,32 +214,47 @@ private class ImportOnDemandScope(javac: JavacWrapper,
                     }
                 }
 
-        return parent?.findClass(name, pathSegments)
+        return parent.findClass(name, pathSegments)
     }
+
+    private fun asteriskImports() =
+        treePath.compilationUnit.imports
+                .mapNotNull {
+                    val fqName = it.qualifiedIdentifier.toString()
+                    if (fqName.endsWith("*")) {
+                        fqName.dropLast(1)
+                    }
+                    else null
+                }
 
 }
 
 private class PackageScope(javac: JavacWrapper,
-                           scope: Scope?,
-                           packageName: String) : Scope(scope, javac, packageName) {
+                           treePath: TreePath) : Scope(javac, treePath) {
+
+    override val parent: Scope
+        get() = ImportOnDemandScope(javac, treePath)
 
     override fun findClass(name: String, pathSegments: List<String>): JavaClassifier? {
-        findJavaOrKotlinClass(classId(packageName, name))?.let { javaClass ->
-            return getJavaClassFromPathSegments(javaClass, pathSegments)
-        }
+        findJavaOrKotlinClass(classId(treePath.compilationUnit.packageName?.toString() ?: "", name))
+                ?.let { javaClass ->
+                    return getJavaClassFromPathSegments(javaClass, pathSegments)
+                }
 
-        return parent?.findClass(name, pathSegments)
+        return parent.findClass(name, pathSegments)
     }
 
 }
 
 private class SingleTypeImportScope(javac: JavacWrapper,
-                                    scope: Scope?,
-                                    private val imports: () -> List<String>,
-                                    packageName: String) : Scope(scope, javac, packageName) {
+                                    treePath: TreePath) : Scope(javac, treePath) {
+
+    override val parent: Scope
+        get() = PackageScope(javac, treePath)
 
     override fun findClass(name: String, pathSegments: List<String>): JavaClassifier? {
-        val imports = imports().toSet().takeIf { it.isNotEmpty() } ?: return parent?.findClass(name, pathSegments)
+        val imports = imports(name).toSet().takeIf { it.isNotEmpty() }
+                      ?: return parent.findClass(name, pathSegments)
 
         imports.singleOrNull() ?: return null
 
@@ -303,16 +262,27 @@ private class SingleTypeImportScope(javac: JavacWrapper,
                 ?.let { javaClass -> getJavaClassFromPathSegments(javaClass, pathSegments) }
     }
 
+    private fun imports(firstSegment: String) =
+        (treePath.compilationUnit as JCTree.JCCompilationUnit).imports
+                .mapNotNull {
+                    val fqName = it.qualifiedIdentifier.toString()
+                    if (fqName.endsWith(".$firstSegment")) {
+                        fqName
+                    }
+                    else null
+                }
+
 }
 
 private class CurrentClassAndInnerScope(javac: JavacWrapper,
-                                        scope: Scope?,
-                                        private val enclosingClasses: List<JavaClass>,
-                                        packageName: String) : Scope(scope, javac, packageName) {
+                                        treePath: TreePath) : Scope(javac, treePath) {
+
+    override val parent: Scope
+        get() = SingleTypeImportScope(javac, treePath)
 
     override fun findClass(name: String, pathSegments: List<String>): JavaClassifier? {
         val identifier = Name.identifier(name)
-        enclosingClasses.forEach {
+        treePath.enclosingClasses.forEach {
             (it as? TreeBasedClass)?.typeParameters
                     ?.find { typeParameter -> typeParameter.name == identifier }
                     ?.let { typeParameter -> return typeParameter }
@@ -322,8 +292,33 @@ private class CurrentClassAndInnerScope(javac: JavacWrapper,
             if (it.name == identifier && pathSegments.size == 1) return it
         }
 
-        return parent?.findClass(name, pathSegments)
+        return parent.findClass(name, pathSegments)
     }
+
+    private val TreePath.enclosingClasses: List<JavaClass>
+        get() {
+            val outerClasses = filterIsInstance<JCTree.JCClassDecl>()
+                    .dropWhile { it.extending == leaf || leaf in it.implementing }
+                    .asReversed()
+                    .map { it.simpleName.toString() }
+
+            val packageName = compilationUnit.packageName?.toString() ?: ""
+            val outermostClassName = outerClasses.firstOrNull() ?: return emptyList()
+
+            val outermostClassId = classId(packageName, outermostClassName)
+            var outermostClass = javac.findClass(outermostClassId) ?: return emptyList()
+
+            val classes = arrayListOf<JavaClass>()
+            classes.add(outermostClass)
+
+            for (it in outerClasses.drop(1)) {
+                outermostClass = outermostClass.findInnerClass(Name.identifier(it))
+                                 ?: throw AssertionError("Couldn't find a class ($it) that is surely defined in ${outermostClass.fqName?.asString()}")
+                classes.add(outermostClass)
+            }
+
+            return classes.reversed()
+        }
 
 }
 

@@ -275,7 +275,7 @@ class KotlinCoreEnvironment private constructor(
             bootClasspath: List<File>? = null,
             sourcePath: List<File>? = null
     ): Boolean {
-        return JavacWrapperRegistrar.registerJavac(projectEnvironment.project, configuration, javaFiles, kotlinFiles, arguments, bootClasspath, sourcePath)
+        return JavacWrapperRegistrar.registerJavac(projectEnvironment.project, configuration, javaFiles, kotlinFiles, arguments, bootClasspath, sourcePath, CliLightClassGenerationSupport(project))
     }
 
     private val applicationEnvironment: CoreApplicationEnvironment
