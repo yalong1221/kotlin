@@ -16,7 +16,6 @@
 
 package org.jetbrains.kotlin.jps.build
 
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.testFramework.UsefulTestCase
 import com.intellij.util.containers.HashMap
 import com.intellij.util.containers.StringInterner
@@ -26,7 +25,6 @@ import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.compilerRunner.*
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.config.Services
-import org.jetbrains.kotlin.incremental.IncrementalCompilationComponentsImpl
 import org.jetbrains.kotlin.incremental.components.LookupInfo
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.components.Position
@@ -37,7 +35,6 @@ import org.jetbrains.kotlin.incremental.testingUtils.TouchPolicy
 import org.jetbrains.kotlin.incremental.testingUtils.copyTestSources
 import org.jetbrains.kotlin.incremental.testingUtils.getModificationsToPerform
 import org.jetbrains.kotlin.incremental.utils.TestMessageCollector
-import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.preloading.ClassCondition
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.utils.PathUtil
@@ -77,14 +74,25 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
 
     fun doTest(path: String) {
         val sb = StringBuilder()
+        fun StringBuilder.indentln(string: String) {
+            appendln("  $string")
+        }
         fun CompilerOutput.logOutput(stepName: String) {
             sb.appendln("==== $stepName ====")
 
             sb.appendln("Compiling files:")
-            compiledFiles.map { it.toRelativeString(workingDir) }.sorted().forEach { sb.appendln("  " + it) }
+            for (compiledFile in compiledFiles.sortedBy { it.canonicalPath }) {
+                val lookupCount = lookupsCount[compiledFile]
+                val lookupStatus = when {
+                    lookupCount == 0 -> "(no lookups)"
+                    lookupCount != null && lookupCount > 0 -> ""
+                    else -> "(unknown)"
+                }
+                sb.indentln("${compiledFile.toRelativeString(workingDir)}$lookupStatus")
+            }
 
             sb.appendln("Exit code: $exitCode")
-            errors.forEach { sb.appendln("  " + it) }
+            errors.forEach(sb::indentln)
 
             sb.appendln()
         }
@@ -109,7 +117,8 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
     private class CompilerOutput(
         val exitCode: String,
         val errors: List<String>,
-        val compiledFiles: Iterable<File>
+        val compiledFiles: Iterable<File>,
+        val lookupsCount: Map<File, Int>
     )
     private class IncrementalData(val sourceToOutput: MutableMap<File, MutableSet<File>> = hashMapOf())
 
@@ -132,8 +141,6 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
         val environment = createEnvironment(lookupTracker, messageCollector, outputItemsCollector)
         val exitCode = runCompiler(filesToCompile, environment)
 
-        checkLookups(filesToCompile, lookupTracker, workingToOriginalFileMap)
-
         for (output in outputItemsCollector.outputs) {
             val outputFile = output.outputFile
             if (outputFile.extension == "kotlin_module") continue
@@ -144,7 +151,8 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
             }
         }
 
-        return CompilerOutput(exitCode.toString(), messageCollector.errors, filesToCompile)
+        val lookupsCount = checkLookups(filesToCompile, lookupTracker, workingToOriginalFileMap)
+        return CompilerOutput(exitCode.toString(), messageCollector.errors, filesToCompile, lookupsCount)
     }
 
     private fun createEnvironment(
@@ -199,13 +207,8 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
             compiledFiles: Iterable<File>,
             lookupTracker: TestLookupTracker,
             workingToOriginalFileMap: Map<File, File>
-    ) {
-        val fileToLookups = lookupTracker.lookups.groupBy { it.filePath }
-
-        fun checkLookupsInFile(expectedFile: File, actualFile: File) {
-            val independentFilePath = FileUtil.toSystemIndependentName(actualFile.path)
-            val lookupsFromFile = fileToLookups[independentFilePath] ?: error("No lookups from compiled file: $actualFile")
-
+    ): Map<File, Int> {
+        fun checkLookupsInFile(expectedFile: File, actualFile: File, lookupsFromFile: List<LookupInfo>) {
             val text = actualFile.readText()
 
             val matchResult = COMMENT_WITH_LOOKUP_INFO.find(text)
@@ -255,8 +258,12 @@ abstract class AbstractLookupTrackerTest : TestWithWorkingDir() {
             KotlinTestUtils.assertEqualsToFile(expectedFile, actual)
         }
 
-        for (file in compiledFiles) {
-            checkLookupsInFile(workingToOriginalFileMap[file]!!, file)
+        val fileToLookups = lookupTracker.lookups.groupBy { File(it.filePath) }
+        return compiledFiles.associate { actualFile ->
+            val expectedFile = workingToOriginalFileMap[actualFile]!!
+            val lookupsInFile = fileToLookups[actualFile]
+            lookupsInFile?.let { checkLookupsInFile(expectedFile, actualFile, it) }
+            actualFile to (lookupsInFile?.size ?: 0)
         }
     }
 }
