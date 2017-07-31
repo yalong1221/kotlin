@@ -44,63 +44,8 @@ class KotlinClassifiersCache(sourceFiles: Collection<KtFile>,
             }.toMap()
 
     private val classifiers = hashMapOf<ClassId, JavaClass>()
-    private val supertypesCache = hashMapOf<KtClassOrObject, HashMap<String, JavaClass?>>()
-    private val beingResolved = hashSetOf<Pair<String, KtClassOrObject>>()
 
     fun getKotlinClassifier(classId: ClassId) = classifiers[classId] ?: createClassifier(classId)
-
-    fun resolveSupertype(name: String,
-                         classOrObject: KtClassOrObject,
-                         javac: JavacWrapper): JavaClass? {
-        if (supertypesCache.containsKey(classOrObject)) {
-            val cachedSupertypes = supertypesCache[classOrObject]!!
-            if (cachedSupertypes.containsKey(name)) {
-                return cachedSupertypes[name]
-            }
-        }
-
-        val toResolve = name to classOrObject
-        if (toResolve in beingResolved) return null
-        beingResolved.add(toResolve)
-
-        val pathSegments = name.split(".")
-        val firstSegment = pathSegments.first()
-
-        val ktFile = classOrObject.containingKtFile
-
-        val enclosingClasses = classOrObject.enclosingClasses
-        val asteriskImports = {
-            ktFile.importDirectives
-                    .mapNotNull {
-                        if (it.text.endsWith("*")) {
-                            it.importedFqName!!.asString()
-                        }
-                        else null
-                    }
-        }
-        val packageName = ktFile.packageFqName.asString()
-        val imports = {
-            ktFile.importDirectives
-                    .mapNotNull {
-                        if (it.text.endsWith(".$firstSegment")) {
-                            it.importedFqName!!.asString()
-                        }
-                        else null
-                    }
-        }
-
-        val resolutionScope = javac.classifierResolver.createResolutionScope(enclosingClasses, asteriskImports, packageName, imports)
-
-        return (resolutionScope.findClass(firstSegment, pathSegments) as? JavaClass).apply {
-            if (supertypesCache.containsKey(classOrObject)) {
-                supertypesCache[classOrObject]!!.put(name, this)
-            }
-            else {
-                supertypesCache[classOrObject] = hashMapOf(name to this)
-            }
-            beingResolved.remove(toResolve)
-        }
-    }
 
     fun createMockKotlinClassifier(classifier: KtClassOrObject,
                                    classId: ClassId) = MockKotlinClassifier(classId,
@@ -129,20 +74,6 @@ class KotlinClassifiersCache(sourceFiles: Collection<KtFile>,
 
         return createMockKotlinClassifier(kotlinClassifier, classId)
     }
-
-    private val KtClassOrObject.enclosingClasses: List<JavaClass>
-        get() {
-            val classOrObjects = arrayListOf<KtClassOrObject>()
-
-            var outerClass: KtClassOrObject? = this.containingClassOrObject
-
-            while (outerClass != null) {
-                classOrObjects.add(outerClass)
-                outerClass = outerClass.containingClassOrObject
-            }
-
-            return classOrObjects.reversed().mapNotNull { it.computeClassId()?.let { createClassifier(it) } }
-        }
 
 }
 
@@ -175,19 +106,8 @@ class MockKotlinClassifier(val classId: ClassId,
         get() = throw UnsupportedOperationException("Should not be called")
 
     override val supertypes: Collection<JavaClassifierType>
-        get() = classOrObject.superTypeListEntries
-                .map { superTypeListEntry ->
-                    val userType = superTypeListEntry.typeAsUserType
-                    arrayListOf<String>().apply {
-                        userType?.referencedName?.let { add(it) }
-                        var qualifier = userType?.qualifier
-                        while (qualifier != null) {
-                            qualifier.referencedName?.let { add(it) }
-                            qualifier = qualifier.qualifier
-                        }
-                    }.reversed().joinToString(separator = ".") { it }
-                }
-                .mapNotNull { cache.resolveSupertype(it, classOrObject, javac) }
+        get() = javac.kotlinSupertypeResolver.resolveSupertypes(classOrObject)
+                .mapNotNull { javac.getKotlinClassifier(it) ?: javac.findClass(it) }
                 .map { MockKotlinClassifierType(it) }
 
     val innerClasses: Collection<JavaClass>

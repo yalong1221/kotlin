@@ -348,12 +348,6 @@ public class CompileKotlinAgainstJavaTestGenerated extends AbstractCompileKotlin
         doTest(fileName);
     }
 
-    @TestMetadata("UseKotlinInner.kt")
-    public void testUseKotlinInner() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/compileKotlinAgainstJava/UseKotlinInner.kt");
-        doTest(fileName);
-    }
-
     @TestMetadata("UseKtClass.kt")
     public void testUseKtClass() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/compileKotlinAgainstJava/UseKtClass.kt");

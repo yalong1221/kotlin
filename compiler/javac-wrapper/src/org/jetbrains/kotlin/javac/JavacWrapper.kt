@@ -67,6 +67,7 @@ class JavacWrapper(
         jvmClasspathRoots: List<File>,
         bootClasspath: List<File>?,
         sourcePath: List<File>?,
+        val kotlinSupertypeResolver: KotlinSupertypeResolver,
         private val compileJava: Boolean,
         private val outputDirectory: File?,
         private val context: Context
