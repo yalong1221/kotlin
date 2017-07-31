@@ -20,6 +20,7 @@ import com.sun.tools.javac.tree.JCTree
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.javac.wrappers.symbols.SymbolBasedArrayAnnotationArgument
+import org.jetbrains.kotlin.javac.wrappers.symbols.SymbolBasedField
 import org.jetbrains.kotlin.javac.wrappers.symbols.SymbolBasedReferenceAnnotationArgument
 import org.jetbrains.kotlin.load.java.JavaVisibilities
 import org.jetbrains.kotlin.load.java.structure.JavaAnnotation
@@ -72,13 +73,27 @@ fun Collection<JavaAnnotation>.filterTypeAnnotations(): Collection<JavaAnnotatio
         val targetAnnotation = annotationClass?.annotations?.find { it.classId == ClassId(FqName("java.lang.annotation"), Name.identifier("Target")) } ?: continue
         val elementTypeArg = targetAnnotation.arguments.firstOrNull() ?: continue
 
-        if (elementTypeArg is SymbolBasedArrayAnnotationArgument) {
-            elementTypeArg.args.find { (it as? SymbolBasedReferenceAnnotationArgument)?.element?.simpleName?.contentEquals("TYPE_USE") ?: false }
-                    ?.let { filteredAnnotations.add(annotation) }
-        }
-        else if (elementTypeArg is SymbolBasedReferenceAnnotationArgument) {
-            elementTypeArg.element.simpleName.takeIf { it.contentEquals("TYPE_USE") }
-                    ?.let { filteredAnnotations.add(annotation) }
+        when (elementTypeArg) {
+            is SymbolBasedArrayAnnotationArgument -> {
+                elementTypeArg.args.find { (it as? SymbolBasedReferenceAnnotationArgument)?.element?.simpleName?.contentEquals("TYPE_USE") ?: false }
+                        ?.let { filteredAnnotations.add(annotation) }
+            }
+            is SymbolBasedReferenceAnnotationArgument -> {
+                elementTypeArg.element.simpleName.takeIf { it.contentEquals("TYPE_USE") }
+                        ?.let { filteredAnnotations.add(annotation) }
+            }
+            is TreeBasedArrayAnnotationArgument -> {
+                elementTypeArg.args.find {
+                    val field = (it as? TreeBasedReferenceAnnotationArgument)?.resolve() as? SymbolBasedField
+                    field?.element?.simpleName?.contentEquals("TYPE_USE") ?: false
+                }?.let { filteredAnnotations.add(annotation) }
+            }
+            is TreeBasedReferenceAnnotationArgument -> {
+                (elementTypeArg.resolve() as? SymbolBasedField)?.let { field ->
+                    field.element.simpleName.takeIf { it.contentEquals("TYPE_USE") }
+                            ?.let { filteredAnnotations.add(annotation) }
+                }
+            }
         }
     }
 

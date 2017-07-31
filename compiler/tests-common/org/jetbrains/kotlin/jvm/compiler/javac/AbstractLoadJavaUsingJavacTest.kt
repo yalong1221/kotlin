@@ -18,13 +18,20 @@ package org.jetbrains.kotlin.jvm.compiler.javac
 
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.config.JVMConfigurationKeys
-import org.jetbrains.kotlin.jvm.compiler.AbstractLoadJava8Test
+import org.jetbrains.kotlin.jvm.compiler.AbstractLoadJavaTest
 
-abstract class AbstractLoadJava8UsingJavacTest : AbstractLoadJava8Test() {
+abstract class AbstractLoadJavaUsingJavacTest : AbstractLoadJavaTest() {
     override fun registerJavacIfNeeded(environment: KotlinCoreEnvironment) {
         environment.registerJavac()
         environment.configuration.put(JVMConfigurationKeys.USE_JAVAC, true)
     }
 
     override fun useJavacWrapper() = true
+
+}
+
+object JavacRegistrarForTests {
+    fun registerJavac(environment: KotlinCoreEnvironment) {
+        environment.registerJavac()
+    }
 }
