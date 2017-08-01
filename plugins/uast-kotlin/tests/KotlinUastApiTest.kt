@@ -3,6 +3,7 @@ package org.jetbrains.uast.test.kotlin
 import com.intellij.psi.PsiModifier
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
+import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
 import org.jetbrains.uast.*
 import org.jetbrains.uast.test.env.findElementByText
@@ -81,6 +82,14 @@ class KotlinUastApiTest : AbstractKotlinUastTest() {
 
             assertEquals("java.lang.Runnable",
                          file.findElementByText<ULambdaExpression>("{/* Return */}").functionalInterfaceType?.canonicalText)
+        }
+    }
+
+    @Test fun testConvertTypeInAnnotation() {
+        doTest("TypeInAnnotation") { _, file ->
+            val index = file.psi.text.indexOf("Test")
+            val element = file.psi.findElementAt(index)!!.getParentOfType<KtUserType>(false)!!
+            assertNotNull(element.getUastParentOfType(UAnnotation::class.java))
         }
     }
 }

@@ -198,6 +198,7 @@ internal fun UElement?.toCallback() = if (this != null) fun(): UElement? { retur
 
 internal object KotlinConverter {
     internal tailrec fun unwrapElements(element: PsiElement?): PsiElement? = when (element) {
+        is KtModifierList -> unwrapElements(element.parent)
         is KtValueArgumentList -> unwrapElements(element.parent)
         is KtValueArgument -> unwrapElements(element.parent)
         else -> element
@@ -238,6 +239,7 @@ internal object KotlinConverter {
             }
             is KtLiteralStringTemplateEntry, is KtEscapeStringTemplateEntry -> el<ULiteralExpression>(build(::KotlinStringULiteralExpression))
             is KtStringTemplateEntry -> element.expression?.let { convertExpression(it, parentCallback, requiredType) } ?: expr<UExpression> { UastEmptyExpression }
+            is KtAnnotationEntry -> el<UAnnotation>(build(::KotlinUAnnotation))
 
             else -> {
                 if (element is LeafPsiElement && element.elementType == KtTokens.IDENTIFIER) {
