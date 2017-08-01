@@ -17,14 +17,20 @@
 package org.jetbrains.kotlin.checkers
 
 import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.test.ConfigurationKind
 import org.jetbrains.kotlin.test.MockLibraryUtil
+import org.jetbrains.kotlin.test.TestJdkKind
 import java.io.File
 
 val FOREIGN_ANNOTATIONS_SOURCES_PATH = "compiler/testData/foreignAnnotations/annotations"
 
-abstract class AbstractForeignAnnotationsTest : AbstractDiagnosticsWithFullJdkTest() {
+abstract class AbstractForeignAnnotationsTest : AbstractDiagnosticsTest() {
     override fun getExtraClasspath(): List<File> =
             listOf(MockLibraryUtil.compileJvmLibraryToJar(annotationsPath, "foreign-annotations"))
+
+    override fun getConfigurationKind(): ConfigurationKind = ConfigurationKind.ALL
+
+    override fun getTestJdkKind(file: File): TestJdkKind = TestJdkKind.FULL_JDK
 
     open protected val annotationsPath: String
         get() = FOREIGN_ANNOTATIONS_SOURCES_PATH
