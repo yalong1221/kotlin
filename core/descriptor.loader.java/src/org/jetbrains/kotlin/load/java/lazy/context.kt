@@ -109,8 +109,11 @@ fun LazyJavaResolverContext.child(
 fun LazyJavaResolverContext.computeNewDefaultTypeQualifiers(
         additionalAnnotations: Annotations
 ): JavaTypeQualifiersByElementType? {
+    if (additionalAnnotations.getAllAnnotations().isNotEmpty()) {
+        println("here")
+    }
     val typeQualifierDefaults =
-            additionalAnnotations.mapNotNull(components.annotationTypeQualifierResolver::resolveTypeQualifierDefaultAnnotation)
+            additionalAnnotations.mapNotNull(components.annotationTypeQualifierResolver::resolveDefaultNullabilityAnnotation)
 
     if (typeQualifierDefaults.isEmpty()) return defaultTypeQualifiers
 
@@ -119,8 +122,7 @@ fun LazyJavaResolverContext.computeNewDefaultTypeQualifiers(
             ?: QualifierByApplicabilityType(AnnotationTypeQualifierResolver.QualifierApplicabilityType::class.java)
 
     var wasUpdate = false
-    for ((typeQualifier, applicableTo) in typeQualifierDefaults) {
-        val nullability = components.signatureEnhancement.extractNullability(typeQualifier) ?: continue
+    for ((nullability, applicableTo) in typeQualifierDefaults) {
         for (applicabilityType in applicableTo) {
             nullabilityQualifiers[applicabilityType] = nullability
             wasUpdate = true

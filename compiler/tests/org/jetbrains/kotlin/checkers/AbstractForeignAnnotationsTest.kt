@@ -23,8 +23,12 @@ import java.io.File
 val FOREIGN_ANNOTATIONS_SOURCES_PATH = "compiler/testData/foreignAnnotations/annotations"
 
 abstract class AbstractForeignAnnotationsTest : AbstractDiagnosticsWithFullJdkTest() {
-    override fun getExtraClasspath(): List<File> =
-            listOf(MockLibraryUtil.compileJvmLibraryToJar(annotationsPath, "foreign-annotations"))
+    override fun getExtraClasspath(): List<File> {
+        if ("noJsr305" in getTestName(false)) {
+            return emptyList()
+        }
+        return listOf(MockLibraryUtil.compileJvmLibraryToJar(annotationsPath, "foreign-annotations"))
+    }
 
     open protected val annotationsPath: String
         get() = FOREIGN_ANNOTATIONS_SOURCES_PATH

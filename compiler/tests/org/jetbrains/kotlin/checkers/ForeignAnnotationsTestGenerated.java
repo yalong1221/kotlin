@@ -104,6 +104,12 @@ public class ForeignAnnotationsTestGenerated extends AbstractForeignAnnotationsT
             doTest(fileName);
         }
 
+        @TestMetadata("fieldsAreNullable_noJsr305.kt")
+        public void testFieldsAreNullable_noJsr305() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/foreignAnnotations/tests/typeQualifierDefault/fieldsAreNullable_noJsr305.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("nullabilityFromOverridden.kt")
         public void testNullabilityFromOverridden() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/foreignAnnotations/tests/typeQualifierDefault/nullabilityFromOverridden.kt");

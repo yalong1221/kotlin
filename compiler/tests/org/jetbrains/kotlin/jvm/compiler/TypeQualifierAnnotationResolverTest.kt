@@ -82,16 +82,30 @@ class TypeQualifierAnnotationResolverTest : KtUsefulTestCase() {
         )
     }
 
-    private fun buildTypeQualifierResolverAndFindClass(className: String): Pair<AnnotationTypeQualifierResolver, ClassDescriptor> {
+    fun testCustomNullabilityAnnotationWithoutJSR305() {
+        val (typeQualifierResolver, aClass) = buildTypeQualifierResolverAndFindClass("B", includeForeignAnnotationsJar = false)
+
+        assertMethodHasUnwrappedAnnotation(
+                aClass, typeQualifierResolver,
+                "myNullable",
+                "@javax.annotation.Nonnull(when = When.MAYBE)"
+        )
+    }
+
+    private fun buildTypeQualifierResolverAndFindClass(className: String,
+                                                       includeForeignAnnotationsJar: Boolean = true): Pair<AnnotationTypeQualifierResolver, ClassDescriptor> {
         val configuration = KotlinTestUtils.newConfiguration(
                 ConfigurationKind.ALL, TestJdkKind.FULL_JDK,
-                listOf(
-                        KotlinTestUtils.getAnnotationsJar(),
-                        MockLibraryUtil.compileJavaFilesLibraryToJar(
-                                FOREIGN_ANNOTATIONS_SOURCES_PATH,
-                                "foreign-annotations"
-                        )
-                ),
+                if (includeForeignAnnotationsJar)
+                    listOf(
+                            KotlinTestUtils.getAnnotationsJar(),
+                            MockLibraryUtil.compileJavaFilesLibraryToJar(
+                                    FOREIGN_ANNOTATIONS_SOURCES_PATH,
+                                    "foreign-annotations"
+                            )
+                    )
+                else
+                    listOf(KotlinTestUtils.getAnnotationsJar()),
                 listOf(File(TEST_DATA_PATH))
         ).apply {
             languageVersionSettings = LanguageVersionSettingsImpl(

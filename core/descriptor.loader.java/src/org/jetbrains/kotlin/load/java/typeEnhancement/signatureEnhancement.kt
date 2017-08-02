@@ -52,25 +52,7 @@ class SignatureEnhancement(private val annotationTypeQualifierResolver: Annotati
             in NOT_NULL_ANNOTATIONS -> return NullabilityQualifier.NOT_NULL
         }
 
-        val typeQualifier =
-                when {
-                    annotationFqName == JAVAX_NONNULL_ANNOTATION -> annotationDescriptor
-                    else -> annotationTypeQualifierResolver.resolveTypeQualifierAnnotation(annotationDescriptor)
-                            ?.takeIf { it.fqName == JAVAX_NONNULL_ANNOTATION }
-                } ?: return null
-
-        val enumEntryDescriptor =
-                typeQualifier.allValueArguments.values.singleOrNull()?.value
-                // if no argument is specified, use default value: NOT_NULL
-                ?: return NullabilityQualifier.NOT_NULL
-
-        if (enumEntryDescriptor !is ClassDescriptor) return null
-
-        return when (enumEntryDescriptor.name.asString()) {
-            "ALWAYS" -> NullabilityQualifier.NOT_NULL
-            "MAYBE" -> NullabilityQualifier.NULLABLE
-            else -> null
-        }
+        return annotationTypeQualifierResolver.extractTypeQualifierNullability(annotationDescriptor)
     }
 
 

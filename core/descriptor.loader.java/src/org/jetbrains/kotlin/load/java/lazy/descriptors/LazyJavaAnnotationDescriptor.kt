@@ -125,9 +125,10 @@ class LazyJavaAnnotationDescriptor(
         return DescriptorRenderer.FQ_NAMES_IN_TYPES.renderAnnotation(this)
     }
 
-    private fun createTypeForMissingDependencies(fqName: FqName) =
-            c.module.findNonGenericClassAcrossDependencies(
-                    ClassId.topLevel(fqName),
-                    c.components.deserializedDescriptorResolver.components.notFoundClasses
-            )
+    private fun createTypeForMissingDependencies(fqName: FqName): ClassDescriptor {
+        return c.module.findNonGenericClassAcrossDependencies(
+                ClassId.topLevel(fqName),
+                c.components.deserializedDescriptorResolver.components.notFoundClasses
+        )
+    }
 }
