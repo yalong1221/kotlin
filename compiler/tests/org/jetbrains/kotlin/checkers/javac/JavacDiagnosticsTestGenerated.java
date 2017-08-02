@@ -169,6 +169,12 @@ public class JavacDiagnosticsTestGenerated extends AbstractJavacDiagnosticsTest 
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/javac/diagnostics/tests/inheritance"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
             }
 
+            @TestMetadata("IheritanceOfInner.kt")
+            public void testIheritanceOfInner() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/diagnostics/tests/inheritance/IheritanceOfInner.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("InheritanceAmbiguity.kt")
             public void testInheritanceAmbiguity() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/diagnostics/tests/inheritance/InheritanceAmbiguity.kt");
@@ -557,6 +563,12 @@ public class JavacDiagnosticsTestGenerated extends AbstractJavacDiagnosticsTest 
         public static class Inheritance extends AbstractJavacDiagnosticsTest {
             public void testAllFilesPresentInInheritance() throws Exception {
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/javac/diagnostics/tests/inheritance"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+            }
+
+            @TestMetadata("IheritanceOfInner.kt")
+            public void testIheritanceOfInner() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/diagnostics/tests/inheritance/IheritanceOfInner.kt");
+                doTestWithoutJavacWrapper(fileName);
             }
 
             @TestMetadata("InheritanceAmbiguity.kt")

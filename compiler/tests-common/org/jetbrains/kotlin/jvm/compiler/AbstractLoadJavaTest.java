@@ -38,10 +38,7 @@ import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
 import org.jetbrains.kotlin.resolve.lazy.JvmResolveUtil;
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor;
-import org.jetbrains.kotlin.test.ConfigurationKind;
-import org.jetbrains.kotlin.test.KotlinTestUtils;
-import org.jetbrains.kotlin.test.TestCaseWithTmpdir;
-import org.jetbrains.kotlin.test.TestJdkKind;
+import org.jetbrains.kotlin.test.*;
 import org.jetbrains.kotlin.test.util.DescriptorValidator;
 import org.junit.Assert;
 
@@ -74,6 +71,8 @@ public abstract class AbstractLoadJavaTest extends TestCaseWithTmpdir {
     protected void doTestCompiledJavaAndKotlin(@NotNull String expectedFileName) throws Exception {
         File expectedFile = new File(expectedFileName);
         File sourcesDir = new File(expectedFileName.replaceFirst("\\.txt$", ""));
+
+        if (useJavacWrapper()) return;
 
         List<File> kotlinSources = FileUtil.findFilesByMask(Pattern.compile(".+\\.kt"), sourcesDir);
         KotlinCoreEnvironment environment =
@@ -115,7 +114,7 @@ public abstract class AbstractLoadJavaTest extends TestCaseWithTmpdir {
             @NotNull String ktFileName, @NotNull ConfigurationKind configurationKind, boolean useTypeTableInSerializer
     ) throws Exception {
         File ktFile = new File(ktFileName);
-        File txtFile = new File(ktFileName.replaceFirst("\\.kt$", ".txt"));
+        File txtFile = getTxtFileFromKtFile(ktFileName);
 
         CompilerConfiguration configuration = newConfiguration(configurationKind, TestJdkKind.MOCK_JDK, getAnnotationsJar());
         if (useTypeTableInSerializer) {
@@ -258,7 +257,7 @@ public abstract class AbstractLoadJavaTest extends TestCaseWithTmpdir {
                 srcFiles, compiledDir, ConfigurationKind.ALL
         );
 
-        checkJavaPackage(getExpectedFile(javaFileName.replaceFirst("\\.java$", ".txt")), javaPackageAndContext.first, javaPackageAndContext.second, configuration);
+        checkJavaPackage(getTxtFile(javaFileName), javaPackageAndContext.first, javaPackageAndContext.second, configuration);
     }
 
     @NotNull
@@ -302,6 +301,29 @@ public abstract class AbstractLoadJavaTest extends TestCaseWithTmpdir {
     }
 
     private static File getTxtFile(String javaFileName) {
-        return new File(javaFileName.replaceFirst("\\.java$", ".txt"));
+        try {
+            String fileText = FileUtil.loadFile(new File(javaFileName));
+            if (InTextDirectivesUtils.isDirectiveDefined(fileText, "// JAVAC_EXPECTED_FILE")) {
+                return new File(javaFileName.replaceFirst("\\.java$", ".javac.txt"));
+            }
+            else return new File(javaFileName.replaceFirst("\\.java$", ".txt"));
+        }
+        catch (IOException e) {
+            return new File(javaFileName.replaceFirst("\\.java$", ".txt"));
+        }
     }
+
+    private static File getTxtFileFromKtFile(String ktFileName) {
+        try {
+            String fileText = FileUtil.loadFile(new File(ktFileName));
+            if (InTextDirectivesUtils.isDirectiveDefined(fileText, "// JAVAC_EXPECTED_FILE")) {
+                return new File(ktFileName.replaceFirst("\\.kt$", ".javac.txt"));
+            }
+            else return new File(ktFileName.replaceFirst("\\.kt$", ".txt"));
+        }
+        catch (IOException e) {
+            return new File(ktFileName.replaceFirst("\\.kt$", ".txt"));
+        }
+    }
+
 }

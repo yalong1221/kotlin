@@ -37,12 +37,35 @@ class ClassifierResolver(private val javac: JavacWrapper) {
     fun resolve(treePath: TreePath): JavaClassifier? = with (treePath) {
         if (cache.containsKey(leaf)) return cache[leaf]
         if (treePath.leaf in beingResolved) return null
-        beingResolved.add(treePath.leaf)
+        beingResolved(treePath.leaf)
 
         return tryToResolve().apply {
             cache[leaf] = this
-            beingResolved.remove(treePath.leaf)
+            removeBeingResolved(treePath.leaf)
         }
+    }
+
+    // to avoid StackOverflow when there are cyclic dependencies
+    private fun beingResolved(tree: Tree) {
+        if (tree is JCTree.JCTypeApply) {
+            beingResolved(tree.clazz)
+        }
+        if (tree is JCTree.JCFieldAccess) {
+            beingResolved.add(tree)
+            beingResolved(tree.selected)
+        }
+        else beingResolved.add(tree)
+    }
+
+    private fun removeBeingResolved(tree: Tree) {
+        if (tree is JCTree.JCTypeApply) {
+            beingResolved(tree.clazz)
+        }
+        if (tree is JCTree.JCFieldAccess) {
+            beingResolved.remove(tree)
+            beingResolved(tree.selected)
+        }
+        else beingResolved.remove(tree)
     }
 
     private fun pathSegments(path: String): List<String> {
