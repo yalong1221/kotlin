@@ -39,17 +39,17 @@ abstract class TreeBasedType<out T : JCTree>(
                    javac: JavacWrapper, annotations: Collection<JavaAnnotation>): JavaType {
             val applicableAnnotations = annotations.filterTypeAnnotations()
             return when (tree) {
-                is JCTree.JCPrimitiveTypeTree -> TreeBasedPrimitiveType(tree, TreePath(treePath, tree), javac, applicableAnnotations)
-                is JCTree.JCArrayTypeTree -> TreeBasedArrayType(tree, TreePath(treePath, tree), javac, applicableAnnotations)
-                is JCTree.JCWildcard -> TreeBasedWildcardType(tree, TreePath(treePath, tree), javac, applicableAnnotations)
-                is JCTree.JCTypeApply -> TreeBasedGenericClassifierType(tree, TreePath(treePath, tree), javac, applicableAnnotations)
+                is JCTree.JCPrimitiveTypeTree -> TreeBasedPrimitiveType(tree, javac.getTreePath(tree, treePath.compilationUnit), javac, applicableAnnotations)
+                is JCTree.JCArrayTypeTree -> TreeBasedArrayType(tree, javac.getTreePath(tree, treePath.compilationUnit), javac, applicableAnnotations)
+                is JCTree.JCWildcard -> TreeBasedWildcardType(tree, javac.getTreePath(tree, treePath.compilationUnit), javac, applicableAnnotations)
+                is JCTree.JCTypeApply -> TreeBasedGenericClassifierType(tree, javac.getTreePath(tree, treePath.compilationUnit), javac, applicableAnnotations)
                 is JCTree.JCAnnotatedType -> {
                     val underlyingType = tree.underlyingType
                     val newAnnotations = tree.annotations
                             .map { TreeBasedAnnotation(it, javac.getTreePath(it, treePath.compilationUnit), javac) }
                     create(underlyingType, javac.getTreePath(underlyingType, treePath.compilationUnit), javac, newAnnotations)
                 }
-                is JCTree.JCExpression -> TreeBasedNonGenericClassifierType(tree, TreePath(treePath, tree), javac, applicableAnnotations)
+                is JCTree.JCExpression -> TreeBasedNonGenericClassifierType(tree, javac.getTreePath(tree, treePath.compilationUnit), javac, applicableAnnotations)
                 else -> throw UnsupportedOperationException("Unsupported type: $tree")
             }
         }
@@ -130,16 +130,30 @@ sealed class TreeBasedClassifierType<out T : JCTree>(
 
     override val typeArguments: List<JavaType>
         get() {
-            val classifier = classifier as? JavaClass ?: return emptyList()
-            if (classifier is MockKotlinClassifier || classifier.isStatic) return emptyList()
+            var tree: JCTree = tree
+            if (tree is JCTree.JCTypeApply) {
+               tree = tree.clazz
+            }
+            if (tree is JCTree.JCFieldAccess) {
+                val enclosingType = TreeBasedType.create(tree.selected, treePath, javac, annotations)
+                return (enclosingType as? JavaClassifierType)?.typeArguments ?: emptyList()
+            }
+            else {
+                val classifier = classifier as? JavaClass ?: return emptyList()
+                if (classifier is MockKotlinClassifier || classifier.isStatic) return emptyList()
 
-            return arrayListOf<JavaClass>().apply {
-                var outer = classifier.outerClass
-                while (outer != null && !outer.isStatic) {
-                    add(outer)
-                    outer = outer.outerClass
-                }
-            }.flatMap { it.typeParameters.map(::TreeBasedTypeParameterType) }
+                return arrayListOf<JavaClass>().apply {
+                    var outer = classifier.outerClass
+                    var staticType = false
+                    while (outer != null && !staticType) {
+                        if (outer.isStatic) {
+                            staticType = true
+                        }
+                        add(outer)
+                        outer = outer.outerClass
+                    }
+                }.flatMap { it.typeParameters.map(::TreeBasedTypeParameterType) }
+            }
         }
 
     private val typeParameter: JCTree.JCTypeParameter?
