@@ -20,7 +20,7 @@ import com.intellij.psi.PsiClass
 import org.jetbrains.kotlin.asJava.classes.KtLightClass
 import org.jetbrains.kotlin.cli.jvm.compiler.CliLightClassGenerationSupport
 import org.jetbrains.kotlin.javac.JavacWrapperKotlinResolver
-import org.jetbrains.kotlin.javac.MockKotlinField
+import org.jetbrains.kotlin.javac.resolve.MockKotlinField
 import org.jetbrains.kotlin.load.java.structure.JavaField
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
