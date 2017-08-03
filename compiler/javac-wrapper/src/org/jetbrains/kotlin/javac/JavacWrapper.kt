@@ -41,6 +41,10 @@ import com.sun.tools.javac.util.Context
 import com.sun.tools.javac.util.Log
 import com.sun.tools.javac.util.Names
 import com.sun.tools.javac.util.Options
+import org.jetbrains.kotlin.javac.resolve.ClassifierResolver
+import org.jetbrains.kotlin.javac.resolve.IdentifierResolver
+import org.jetbrains.kotlin.javac.resolve.KotlinClassifiersCache
+import org.jetbrains.kotlin.javac.resolve.classId
 import org.jetbrains.kotlin.javac.wrappers.symbols.SymbolBasedClass
 import org.jetbrains.kotlin.javac.wrappers.symbols.SymbolBasedClassifierType
 import org.jetbrains.kotlin.javac.wrappers.symbols.SymbolBasedPackage

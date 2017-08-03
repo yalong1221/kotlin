@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.javac.wrappers.trees
+package org.jetbrains.kotlin.javac.resolve
 
 import com.sun.source.tree.Tree
 import com.sun.source.util.TreePath
 import com.sun.tools.javac.tree.JCTree
 import org.jetbrains.kotlin.javac.JavacWrapper
+import org.jetbrains.kotlin.javac.wrappers.trees.TreeBasedClass
+import org.jetbrains.kotlin.javac.wrappers.trees.TreeBasedTypeParameter
 import org.jetbrains.kotlin.load.java.structure.JavaClass
 import org.jetbrains.kotlin.load.java.structure.JavaClassifier
 import org.jetbrains.kotlin.name.ClassId

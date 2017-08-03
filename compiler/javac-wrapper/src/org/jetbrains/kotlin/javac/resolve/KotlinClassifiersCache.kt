@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.javac
+package org.jetbrains.kotlin.javac.resolve
 
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiField
@@ -22,6 +22,7 @@ import com.intellij.psi.PsiLiteralExpression
 import com.intellij.psi.search.SearchScope
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
+import org.jetbrains.kotlin.javac.JavacWrapper
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.load.java.JavaVisibilities
 import org.jetbrains.kotlin.load.java.structure.*
