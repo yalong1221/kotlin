@@ -24,8 +24,7 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.OUTPUT
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.OutputMessageUtil
 import org.jetbrains.kotlin.cli.common.output.outputUtils.writeAll
-import org.jetbrains.kotlin.codegen.CompilationErrorHandler
-import org.jetbrains.kotlin.codegen.KotlinCodegenFacade
+import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.config.CommonConfigurationKeys
 import org.jetbrains.kotlin.config.CompilerConfiguration
@@ -192,7 +191,8 @@ abstract class AbstractKapt3Extension(
         logger.info { "Kotlin files to compile: " + files.map { it.virtualFile?.name ?: "<in memory ${it.hashCode()}>" } }
 
         return compileStubs(project, module, context, files.toList()).apply {
-            generateKotlinSourceStubs(this)
+            val converter = generateKotlinSourceStubs(this)
+            saveIncrementalData(this, logger.messageCollector, converter, context)
         }
     }
 
@@ -218,18 +218,7 @@ abstract class AbstractKapt3Extension(
     ): KaptContext<GenerationState> {
         val builderFactory = Kapt3BuilderFactory()
 
-        val targetId = TargetId(
-                name = compilerConfiguration[CommonConfigurationKeys.MODULE_NAME] ?: module.name.asString(),
-                type = "java-production")
-
-        val generationState = GenerationState(
-                project,
-                builderFactory,
-                module,
-                bindingContext,
-                files,
-                compilerConfiguration,
-                targetId = targetId)
+        val generationState = createGenerationState(module, project, bindingContext, files, builderFactory)
 
         val (classFilesCompilationTime) = measureTimeMillis {
             KotlinCodegenFacade.compileCorrectFiles(generationState, CompilationErrorHandler.THROW_EXCEPTION)
@@ -244,7 +233,28 @@ abstract class AbstractKapt3Extension(
         return KaptContext(logger, bindingContext, compiledClasses, origins, generationState, options, javacOptions)
     }
 
-    private fun generateKotlinSourceStubs(kaptContext: KaptContext<GenerationState>) {
+    private fun createGenerationState(
+            module: ModuleDescriptor,
+            project: Project,
+            bindingContext: BindingContext,
+            files: List<KtFile>,
+            builderFactory: ClassBuilderFactory
+    ): GenerationState {
+        val targetId = TargetId(
+                name = compilerConfiguration[CommonConfigurationKeys.MODULE_NAME] ?: module.name.asString(),
+                type = "java-production")
+
+        return GenerationState(
+                project,
+                builderFactory,
+                module,
+                bindingContext,
+                files,
+                compilerConfiguration,
+                targetId = targetId)
+    }
+
+    private fun generateKotlinSourceStubs(kaptContext: KaptContext<GenerationState>): ClassFileToSourceStubConverter {
         val converter = ClassFileToSourceStubConverter(kaptContext, generateNonExistentClass = true, correctErrorTypes = correctErrorTypes)
 
         val (stubGenerationTime, kotlinSourceStubs) = measureTimeMillis {
@@ -255,7 +265,7 @@ abstract class AbstractKapt3Extension(
         logger.info { "Stubs for Kotlin classes: " + kotlinSourceStubs.joinToString { it.sourcefile.name } }
 
         saveStubs(kotlinSourceStubs)
-        saveIncrementalData(kaptContext, logger.messageCollector, converter)
+        return converter
     }
 
     private fun collectJavaSourceFiles(): List<File> {
@@ -281,11 +291,24 @@ abstract class AbstractKapt3Extension(
     protected open fun saveIncrementalData(
             kaptContext: KaptContext<GenerationState>,
             messageCollector: MessageCollector,
-            converter: ClassFileToSourceStubConverter) {
+            converter: ClassFileToSourceStubConverter,
+            originalBindingContext: BindingContext
+    ) {
         val incrementalDataOutputDir = this.incrementalDataOutputDir ?: return
 
-        val reportOutputFiles = kaptContext.generationState.configuration.getBoolean(CommonConfigurationKeys.REPORT_OUTPUT_FILES)
-        kaptContext.generationState.factory.writeAll(
+        val builderFactory = ClassBuilderFactories.binaries(ClassBuilderMode.KAPT_INCREMENTAL_DATA)
+        val generationState = kaptContext.generationState
+        val newGenerationState = createGenerationState(
+                generationState.module, generationState.project, originalBindingContext, generationState.files, builderFactory)
+
+        val (classFilesCompilationTime) = measureTimeMillis {
+            KotlinCodegenFacade.compileCorrectFiles(newGenerationState, CompilationErrorHandler.THROW_EXCEPTION)
+        }
+
+        logger.info { "Incremental data compilation took $classFilesCompilationTime ms" }
+
+        val reportOutputFiles = newGenerationState.configuration.getBoolean(CommonConfigurationKeys.REPORT_OUTPUT_FILES)
+        newGenerationState.factory.writeAll(
                 incrementalDataOutputDir,
                 if (!reportOutputFiles) null else fun(file: OutputFile, sources: List<File>, output: File) {
                     val stubFileObject = converter.bindings[file.relativePath.substringBeforeLast(".class", missingDelimiterValue = "")]

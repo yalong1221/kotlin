@@ -125,7 +125,7 @@ class ClassFileToSourceStubConverter(
         val descriptor = origin.descriptor ?: return null
 
         // Nested classes will be processed during the outer classes conversion
-        if ((descriptor as? ClassDescriptor)?.isNested ?: false) return null
+        if ((descriptor as? ClassDescriptor)?.isNested == true) return null
 
         val packageAnnotations = JavacList.nil<JCAnnotation>()
         val packageName = ktFile.packageFqName.asString()
@@ -139,6 +139,7 @@ class ClassFileToSourceStubConverter(
         val topLevel = treeMaker.TopLevel(packageAnnotations, packageClause, imports + classes)
 
         KaptJavaFileObject(topLevel, classDeclaration, fileManager).apply {
+            // It's ok to add class file bindings generated in KAPT3 ClassBuilderMode, cause we write it for top-level classes only
             topLevel.sourcefile = this
             _bindings[clazz.name] = this
         }

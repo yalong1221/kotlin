@@ -423,7 +423,7 @@ object KotlinToJVMBytecodeCompiler {
         val isKapt2Enabled = environment.project.getUserData(IS_KAPT2_ENABLED_KEY) ?: false
         val generationState = GenerationState(
                 environment.project,
-                ClassBuilderFactories.binaries(isKapt2Enabled),
+                ClassBuilderFactories.binaries(ClassBuilderMode.full(isKapt2Enabled)),
                 result.moduleDescriptor,
                 result.bindingContext,
                 sourceFiles,

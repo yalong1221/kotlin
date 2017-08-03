@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.kapt3.KaptContext
 import org.jetbrains.kotlin.kapt3.javac.KaptJavaFileObject
 import org.jetbrains.kotlin.kapt3.stubs.ClassFileToSourceStubConverter
 import org.jetbrains.kotlin.kapt3.util.KaptLogger
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.test.ConfigurationKind
 import org.jetbrains.kotlin.test.KotlinTestUtils
@@ -177,7 +178,8 @@ abstract class AbstractKotlinKapt3IntegrationTest : CodegenTestCase() {
         override fun saveIncrementalData(
                 kaptContext: KaptContext<GenerationState>,
                 messageCollector: MessageCollector,
-                converter: ClassFileToSourceStubConverter
+                converter: ClassFileToSourceStubConverter,
+                originalBindingContext: BindingContext
         ) {
             if (this.savedBindings != null) {
                 error("Bindings are already saved")
@@ -185,7 +187,7 @@ abstract class AbstractKotlinKapt3IntegrationTest : CodegenTestCase() {
 
             this.savedBindings = converter.bindings
 
-            super.saveIncrementalData(kaptContext, messageCollector, converter)
+            super.saveIncrementalData(kaptContext, messageCollector, converter, originalBindingContext)
         }
     }
 }
