@@ -45,7 +45,7 @@ class K2JSCompilerArguments : CommonCompilerArguments() {
 
     @GradleOption(DefaultValues.StringNullDefault::class)
     @Argument(value = "-source-map-prefix", description = "Prefix for paths in a source map")
-    var sourceMapPrefix: String? by FreezableVar(null)
+    var sourceMapPrefix: String? by FreezableVar("")
 
     @Argument(
             value = "-source-map-source-roots",
@@ -60,7 +60,7 @@ class K2JSCompilerArguments : CommonCompilerArguments() {
             valueDescription = "{ always, never, inlining }",
             description = "Embed source files into source map"
     )
-    var sourceMapEmbedSources: String? by FreezableVar(null)
+    var sourceMapEmbedSources: String? by FreezableVar(K2JsArgumentConstants.SOURCE_MAP_SOURCE_CONTENT_INLINING)
 
     @GradleOption(DefaultValues.BooleanTrueDefault::class)
     @Argument(value = "-meta-info", description = "Generate .meta.js and .kjsm files with metadata. Use to create a library")
