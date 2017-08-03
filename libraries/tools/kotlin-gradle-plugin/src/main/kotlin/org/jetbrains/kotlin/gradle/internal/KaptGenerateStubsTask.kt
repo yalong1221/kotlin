@@ -18,7 +18,7 @@ package org.jetbrains.kotlin.gradle.internal
 
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
-import org.jetbrains.kotlin.com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.util.io.FileUtil
 import org.jetbrains.kotlin.gradle.plugin.kotlinDebug
 import org.jetbrains.kotlin.gradle.tasks.FilteringSourceRootsContainer
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -66,8 +66,8 @@ open class KaptGenerateStubsTask : KotlinCompile() {
         val args = createCompilerArgs()
 
         kotlinCompileTask.setupCompilerArgs(args)
-        args.pluginClasspaths = (pluginOptions.classpath + args.pluginClasspaths).toSet().toTypedArray()
-        args.pluginOptions = (pluginOptions.arguments + args.pluginOptions).toTypedArray()
+        args.pluginClasspaths = (pluginOptions.classpath + args.pluginClasspaths!!).toSet().toTypedArray()
+        args.pluginOptions = (pluginOptions.arguments + args.pluginOptions!!).toTypedArray()
         args.verbose = project.hasProperty("kapt.verbose") && project.property("kapt.verbose").toString().toBoolean() == true
         args.classpathAsList = this.compileClasspath.toList()
         args.destinationAsFile = this.destinationDir

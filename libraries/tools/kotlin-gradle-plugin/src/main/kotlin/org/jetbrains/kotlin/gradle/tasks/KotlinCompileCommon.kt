@@ -43,7 +43,7 @@ internal open class KotlinCompileCommon : AbstractKotlinCompile<K2MetadataCompil
         with(args) {
             classpath = classpathList.joinToString(File.pathSeparator)
             destination = destinationDir.canonicalPath
-            freeArgs = sourceRoots.kotlinSourceFiles.map { it.canonicalPath }
+            freeArgs = sourceRoots.kotlinSourceFiles.map { it.canonicalPath }.toMutableList()
         }
 
         val messageCollector = GradleMessageCollector(logger)
