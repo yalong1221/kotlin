@@ -22,6 +22,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.ModificationTracker
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.pom.PomManager
 import com.intellij.pom.PomModelAspect
 import com.intellij.pom.event.PomModelEvent
@@ -32,12 +33,13 @@ import com.intellij.psi.PsiCodeFragment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.impl.PsiModificationTrackerImpl
 import com.intellij.psi.util.PsiModificationTracker
-import com.intellij.testFramework.LightVirtualFile
 import com.intellij.util.CommonProcessors
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getTopmostParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.isAncestor
 import org.jetbrains.kotlin.psi.psiUtil.parents
+
+val KOTLIN_CONSOLE_KEY = Key.create<Boolean>("kotlin.console")
 
 /**
  * Tested in OutOfBlockModificationTestGenerated
@@ -82,7 +84,7 @@ class KotlinCodeBlockModificationListener(
                 if (changedElements.any { getInsideCodeBlockModificationScope(it.psi) == null } ||
                     (file is PsiCodeFragment && changedElements.isEmpty())) {
                     messageBusConnection.deliverImmediately()
-                    if (file.isPhysical && file.virtualFile !is LightVirtualFile) {
+                    if (file.isPhysical && !isReplLine(file.virtualFile)) {
                         lastAffectedModule = ModuleUtil.findModuleForPsiElement(file)
                         println("Kotlin-initiated OOCB increase for $lastAffectedModule")
                         lastAffectedModuleModCount = modificationTrackerImpl.outOfCodeBlockModificationCount
@@ -112,6 +114,10 @@ class KotlinCodeBlockModificationListener(
     }
 
     companion object {
+        private fun isReplLine(file: VirtualFile): Boolean {
+            return file.getUserData(KOTLIN_CONSOLE_KEY) == true
+        }
+
         private fun incOutOfBlockModificationCount(file: KtFile) {
             val count = file.getUserData(FILE_OUT_OF_BLOCK_MODIFICATION_COUNT) ?: 0
             file.putUserData(FILE_OUT_OF_BLOCK_MODIFICATION_COUNT, count + 1)
