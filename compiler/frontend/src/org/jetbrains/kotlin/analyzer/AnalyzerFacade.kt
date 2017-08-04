@@ -99,7 +99,12 @@ class ResolverForProjectImpl<M : ModuleInfo>(
             val moduleDescriptor: ModuleDescriptorImpl,
             val modificationTracker: ModificationTracker?,
             val modificationCount: Long?
-    )
+    ) {
+        fun isOutOfDate(): Boolean {
+            val currentModCount = modificationTracker?.modificationCount
+            return currentModCount != null && currentModCount > modificationCount!!
+        }
+    }
 
     private val descriptorByModule = mutableMapOf<M, ModuleData>()
     private val moduleInfoByDescriptor = mutableMapOf<ModuleDescriptorImpl, M>()
@@ -176,8 +181,7 @@ class ResolverForProjectImpl<M : ModuleInfo>(
                         println("Created initial module descriptor for module $module: $moduleDescriptor in ${this@ResolverForProjectImpl} [mod count $modificationCount]")
                     }
                 }
-                val currentModCount = moduleData.modificationTracker?.modificationCount
-                if (currentModCount != null && currentModCount > moduleData.modificationCount!!) {
+                if (moduleData.isOutOfDate()) {
                     println("Recreating descriptor for module $module")
                     moduleData = recreateModuleDescriptor(module)
                     recreateDependentModuleDescriptors(module)
@@ -197,7 +201,10 @@ class ResolverForProjectImpl<M : ModuleInfo>(
             module != baseModule && baseModule in module.dependencies()
         }
         for (module in modulesToRecreate) {
-            recreateModuleDescriptor(module)
+            val moduleData = descriptorByModule[module]
+            if (moduleData?.isOutOfDate() == true) {
+                recreateModuleDescriptor(module)
+            }
         }
     }
 
