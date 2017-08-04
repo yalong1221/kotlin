@@ -50,6 +50,12 @@ public class JavacFieldResolutionTestGenerated extends AbstractJavacFieldResolut
             doTest(fileName);
         }
 
+        @TestMetadata("ConstantByFqName.kt")
+        public void testConstantByFqName() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/fieldsResolution/tests/ConstantByFqName.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("ConstantValues.kt")
         public void testConstantValues() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/fieldsResolution/tests/ConstantValues.kt");
@@ -122,6 +128,12 @@ public class JavacFieldResolutionTestGenerated extends AbstractJavacFieldResolut
         @TestMetadata("BinaryInitializers.kt")
         public void testBinaryInitializers() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/fieldsResolution/tests/BinaryInitializers.kt");
+            doTestWithoutJavacWrapper(fileName);
+        }
+
+        @TestMetadata("ConstantByFqName.kt")
+        public void testConstantByFqName() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/javac/fieldsResolution/tests/ConstantByFqName.kt");
             doTestWithoutJavacWrapper(fileName);
         }
 
