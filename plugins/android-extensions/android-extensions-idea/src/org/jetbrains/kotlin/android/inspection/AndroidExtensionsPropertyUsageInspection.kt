@@ -79,19 +79,12 @@ class AndroidExtensionsPropertyUsageInspection : AbstractKotlinInspection() {
     private fun ResolvedCall<*>.getReceiverClass(): KtClass? =
             extensionReceiver?.type?.constructor?.declarationDescriptor?.source?.getPsi() as? KtClass
 
-    private fun List<XmlFile>.getIncludedLayouts(androidFacet: AndroidFacet, processedLayouts: Set<XmlFile> = setOf()): List<XmlFile> {
-        if (isEmpty()) {
-            return emptyList()
-        }
-
-        val includedLayouts = filter { it !in processedLayouts }.flatMap { it.getIncludedLayouts(androidFacet) }
-        return includedLayouts + includedLayouts.getIncludedLayouts(androidFacet, processedLayouts + this)
-    }
 
     private fun KtClass.getRelatedLayouts(androidFacet: AndroidFacet): Set<XmlFile> {
         val layouts = mutableSetOf<XmlFile>()
         accept(object : KtVisitorVoid() {
             override fun visitKtElement(element: KtElement) {
+                super.visitKtElement(element)
                 element.acceptChildren(this)
             }
 
@@ -120,6 +113,15 @@ class AndroidExtensionsPropertyUsageInspection : AbstractKotlinInspection() {
         return layouts
     }
 
+    private fun List<XmlFile>.getIncludedLayouts(androidFacet: AndroidFacet, processedLayouts: Set<XmlFile> = setOf()): List<XmlFile> {
+        if (isEmpty()) {
+            return emptyList()
+        }
+
+        val includedLayouts = filter { it !in processedLayouts }.flatMap { it.getIncludedLayouts(androidFacet) }
+        return includedLayouts + includedLayouts.getIncludedLayouts(androidFacet, processedLayouts + this)
+    }
+
     private fun XmlFile.getIncludedLayouts(androidFacet: AndroidFacet): Set<XmlFile> {
         val result = mutableSetOf<XmlFile>()
         rootTag?.acceptChildren(object : XmlElementVisitor() {
@@ -130,16 +132,15 @@ class AndroidExtensionsPropertyUsageInspection : AbstractKotlinInspection() {
 
             override fun visitXmlTag(tag: XmlTag) {
                 super.visitXmlTag(tag)
-                if (tag.name == "include") {
-                    val layout = tag.getAttribute("layout")?.value
-                    val (resClassName, fieldName) = layout?.substring(1)?.split('/')?.takeIf { it.size == 2 } ?: return
-                    val files = androidFacet
-                            .localResourceManager
-                            .findResourcesByFieldName(resClassName, fieldName)
-                            .filterIsInstance<XmlFile>()
+                if (tag.name != "include") return
+                val layout = tag.getAttribute("layout")?.value ?: return
+                val (resClassName, fieldName) = layout.substring(1).split('/').takeIf { it.size == 2 } ?: return
+                val files = androidFacet
+                        .localResourceManager
+                        .findResourcesByFieldName(resClassName, fieldName)
+                        .filterIsInstance<XmlFile>()
 
-                    result.addAll(files)
-                }
+                result.addAll(files)
             }
         })
 
