@@ -120,7 +120,7 @@ sealed class TreeBasedClassifierType<out T : JCTree>(
 ) : TreeBasedType<T>(tree, treePath, javac, annotations), JavaClassifierType {
 
     override val classifier: JavaClassifier?
-        get() = javac.resolve(treePath)
+            by lazy { javac.resolve(treePath) }
 
     override val classifierQualifiedName: String
         get() = (classifier as? JavaClass)?.fqName?.asString() ?: treePath.leaf.toString().substringBefore("<")
@@ -132,7 +132,7 @@ sealed class TreeBasedClassifierType<out T : JCTree>(
         get() {
             var tree: JCTree = tree
             if (tree is JCTree.JCTypeApply) {
-               tree = tree.clazz
+                tree = tree.clazz
             }
             if (tree is JCTree.JCFieldAccess) {
                 val enclosingType = TreeBasedType.create(tree.selected, treePath, javac, annotations)
@@ -158,12 +158,12 @@ sealed class TreeBasedClassifierType<out T : JCTree>(
 
     private val typeParameter: JCTree.JCTypeParameter?
         get() = treePath.flatMap {
-                    when (it) {
-                        is JCTree.JCClassDecl -> it.typarams
-                        is JCTree.JCMethodDecl -> it.typarams
-                        else -> emptyList<JCTree.JCTypeParameter>()
-                    }
-                }
+            when (it) {
+                is JCTree.JCClassDecl -> it.typarams
+                is JCTree.JCMethodDecl -> it.typarams
+                else -> emptyList<JCTree.JCTypeParameter>()
+            }
+        }
                 .find { it.toString().substringBefore(" ") == treePath.leaf.toString() }
 
 }
@@ -213,13 +213,13 @@ class TreeBasedGenericClassifierType(
 ) : TreeBasedClassifierType<JCTree.JCTypeApply>(tree, treePath, javac, annotations) {
 
     override val classifier: JavaClassifier?
-        get() {
-            val newTree = tree.clazz
-            return if (newTree is JCTree.JCAnnotatedType) {
-                javac.resolve(javac.getTreePath(newTree.underlyingType, treePath.compilationUnit))
+            by lazy {
+                val newTree = tree.clazz
+                if (newTree is JCTree.JCAnnotatedType) {
+                    javac.resolve(javac.getTreePath(newTree.underlyingType, treePath.compilationUnit))
+                }
+                else super.classifier
             }
-            else super.classifier
-        }
 
     override val annotations: Collection<JavaAnnotation>
         get() {

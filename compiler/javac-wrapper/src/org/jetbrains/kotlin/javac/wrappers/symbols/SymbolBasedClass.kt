@@ -62,28 +62,34 @@ class SymbolBasedClass(
         get() = FqName(element.qualifiedName.toString())
 
     override val supertypes: Collection<JavaClassifierType>
-        get() = arrayListOf<TypeMirror>()
-                .apply {
-                    element.superclass.takeIf { it !is NoType }?.let(this::add)
-                }
-                .apply { addAll(element.interfaces) }
-                .mapTo(arrayListOf()) { SymbolBasedClassifierType(it, javac) }
-                .apply {
-                    if (isEmpty() && element.qualifiedName.toString() != CommonClassNames.JAVA_LANG_OBJECT) {
-                        javac.JAVA_LANG_OBJECT?.let { add(it) }
-                    }
-                }
+            by lazy {
+                arrayListOf<TypeMirror>()
+                        .apply {
+                            element.superclass.takeIf { it !is NoType }?.let(this::add)
+                        }
+                        .apply { addAll(element.interfaces) }
+                        .mapTo(arrayListOf()) { SymbolBasedClassifierType(it, javac) }
+                        .apply {
+                            if (isEmpty() && element.qualifiedName.toString() != CommonClassNames.JAVA_LANG_OBJECT) {
+                                javac.JAVA_LANG_OBJECT?.let { add(it) }
+                            }
+                        }
+            }
 
     val innerClasses: Map<Name, JavaClass>
-        get() = element.enclosedElements
-                .filterIsInstance(TypeElement::class.java)
-                .map { SymbolBasedClass(it, javac, file) }
-                .associateBy(JavaClass::name)
+            by lazy {
+                element.enclosedElements
+                        .filterIsInstance(TypeElement::class.java)
+                        .map { SymbolBasedClass(it, javac, file) }
+                        .associateBy(JavaClass::name)
+            }
 
     override val outerClass: JavaClass?
-        get() = element.enclosingElement?.let {
-            if (it.asType().kind != TypeKind.DECLARED) null else SymbolBasedClass(it as TypeElement, javac, file)
-        }
+            by lazy {
+                element.enclosingElement?.let {
+                    if (it.asType().kind != TypeKind.DECLARED) null else SymbolBasedClass(it as TypeElement, javac, file)
+                }
+            }
 
     override val isInterface: Boolean
         get() = element.kind == ElementKind.INTERFACE
@@ -99,7 +105,7 @@ class SymbolBasedClass(
 
     override val methods: Collection<JavaMethod>
         get() = element.enclosedElements
-                .filter { it.kind == ElementKind.METHOD && !isEnumValuesOrValueOf(it as ExecutableElement)}
+                .filter { it.kind == ElementKind.METHOD && !isEnumValuesOrValueOf(it as ExecutableElement) }
                 .map { SymbolBasedMethod(it as ExecutableElement, javac) }
 
     private fun isEnumValuesOrValueOf(method: ExecutableElement): Boolean {

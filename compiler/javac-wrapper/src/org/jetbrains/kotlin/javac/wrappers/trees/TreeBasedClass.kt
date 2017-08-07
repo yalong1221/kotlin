@@ -76,28 +76,31 @@ class TreeBasedClass(
                         separator = ".",
                         transform = JCTree.JCClassDecl::name
                 )
-                .let { treePath.compilationUnit.packageName?.let { packageName -> FqName("$packageName.$it") } ?: FqName.topLevel(Name.identifier(it))}
+                .let { treePath.compilationUnit.packageName?.let { packageName -> FqName("$packageName.$it") } ?: FqName.topLevel(Name.identifier(it)) }
 
     override val supertypes: Collection<JavaClassifierType>
-        get() = arrayListOf<JavaClassifierType>().also { list ->
-            if (isEnum) {
-                createEnumSupertype(this, javac).let { list.add(it) }
-            } else if (isAnnotationType) {
-                javac.JAVA_LANG_ANNOTATION_ANNOTATION?.let { list.add(it) }
-            }
+            by lazy {
+                arrayListOf<JavaClassifierType>().also { list ->
+                    if (isEnum) {
+                        createEnumSupertype(this, javac).let { list.add(it) }
+                    }
+                    else if (isAnnotationType) {
+                        javac.JAVA_LANG_ANNOTATION_ANNOTATION?.let { list.add(it) }
+                    }
 
-            tree.extending?.let {
-                (TreeBasedType.create(it, javac.getTreePath(it, treePath.compilationUnit), javac, emptyList()) as? JavaClassifierType)
-                        ?.let { list.add(it) }
-            }
-            tree.implementing?.mapNotNull {
-                TreeBasedType.create(it, javac.getTreePath(it, treePath.compilationUnit), javac, emptyList()) as? JavaClassifierType
-            }?.let { list.addAll(it) }
+                    tree.extending?.let {
+                        (TreeBasedType.create(it, javac.getTreePath(it, treePath.compilationUnit), javac, emptyList()) as? JavaClassifierType)
+                                ?.let { list.add(it) }
+                    }
+                    tree.implementing?.mapNotNull {
+                        TreeBasedType.create(it, javac.getTreePath(it, treePath.compilationUnit), javac, emptyList()) as? JavaClassifierType
+                    }?.let { list.addAll(it) }
 
-            if (list.isEmpty()) {
-                javac.JAVA_LANG_OBJECT?.let { list.add(it) }
+                    if (list.isEmpty()) {
+                        javac.JAVA_LANG_OBJECT?.let { list.add(it) }
+                    }
+                }
             }
-        }
 
     val innerClasses: Map<Name, TreeBasedClass> by lazy {
         tree.members
@@ -172,6 +175,7 @@ private fun createEnumSupertype(javaClass: JavaClass,
         get() = classifierQualifiedName
     override val isDeprecatedInJavaDoc: Boolean
         get() = false
+
     override fun findAnnotation(fqName: FqName) = null
 
     private inner class TypeArgument : JavaClassifierType {
@@ -189,6 +193,7 @@ private fun createEnumSupertype(javaClass: JavaClass,
             get() = classifierQualifiedName
         override val isDeprecatedInJavaDoc: Boolean
             get() = false
+
         override fun findAnnotation(fqName: FqName) = null
 
     }

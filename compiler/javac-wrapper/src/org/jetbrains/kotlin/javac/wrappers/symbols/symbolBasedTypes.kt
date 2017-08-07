@@ -73,12 +73,16 @@ class SymbolBasedClassifierType<out T : TypeMirror>(
 ) : SymbolBasedType<T>(typeMirror, javac), JavaClassifierType {
 
     override val classifier: JavaClassifier?
-        get() = when (typeMirror.kind) {
-            TypeKind.DECLARED -> ((typeMirror as DeclaredType).asElement() as Symbol.ClassSymbol).let { symbol ->
-                SymbolBasedClass(symbol, javac, symbol.classfile)
+        by lazy {
+            when (typeMirror.kind) {
+                TypeKind.DECLARED -> ((typeMirror as DeclaredType).asElement() as Symbol.ClassSymbol).let { symbol ->
+                    // try to find cached javaClass
+                    symbol.computeClassId()?.let { javac.findClass(it) }
+                    ?: SymbolBasedClass(symbol, javac, symbol.classfile)
+                }
+                TypeKind.TYPEVAR -> SymbolBasedTypeParameter((typeMirror as TypeVariable).asElement() as TypeParameterElement, javac)
+                else -> null
             }
-            TypeKind.TYPEVAR -> SymbolBasedTypeParameter((typeMirror as TypeVariable).asElement() as TypeParameterElement, javac)
-            else -> null
         }
 
     override val typeArguments: List<JavaType>
