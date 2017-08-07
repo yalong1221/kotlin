@@ -77,8 +77,9 @@ class SymbolBasedClassifierType<out T : TypeMirror>(
             when (typeMirror.kind) {
                 TypeKind.DECLARED -> ((typeMirror as DeclaredType).asElement() as Symbol.ClassSymbol).let { symbol ->
                     // try to find cached javaClass
-                    symbol.computeClassId()?.let { javac.findClass(it) }
-                    ?: SymbolBasedClass(symbol, javac, symbol.classfile)
+                    val classId = symbol.computeClassId()
+                    classId?.let { javac.findClass(it) }
+                    ?: SymbolBasedClass(symbol, javac, classId, symbol.classfile)
                 }
                 TypeKind.TYPEVAR -> SymbolBasedTypeParameter((typeMirror as TypeVariable).asElement() as TypeParameterElement, javac)
                 else -> null

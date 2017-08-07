@@ -23,6 +23,7 @@ import com.intellij.psi.search.SearchScope
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.fileClasses.javaFileFacadeFqName
+import org.jetbrains.kotlin.javac.JavaClassWithClassId
 import org.jetbrains.kotlin.javac.JavacWrapper
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.load.java.JavaVisibilities
@@ -30,7 +31,6 @@ import org.jetbrains.kotlin.load.java.structure.*
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
-import org.jetbrains.kotlin.load.java.structure.impl.VirtualFileBoundJavaClass
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierType
@@ -89,11 +89,11 @@ class KotlinClassifiersCache(sourceFiles: Collection<KtFile>,
 
 }
 
-class MockKotlinClassifier(val classId: ClassId,
+class MockKotlinClassifier(override val classId: ClassId,
                            private val classOrObject: KtClassOrObject?,
                            private val ktFile: KtFile?,
                            private val cache: KotlinClassifiersCache,
-                           private val javac: JavacWrapper) : VirtualFileBoundJavaClass {
+                           private val javac: JavacWrapper) : JavaClassWithClassId {
 
     override val fqName: FqName
         get() = classId.asSingleFqName()
@@ -121,10 +121,8 @@ class MockKotlinClassifier(val classId: ClassId,
         get() = classOrObject?.declarations
                         ?.filterIsInstance<KtClassOrObject>()
                         ?.mapNotNull { nestedClassOrObject ->
-            nestedClassOrObject.computeClassId()?.let {
-                cache.createMockKotlinClassifier(nestedClassOrObject, ktFile, it)
-            }
-        } ?: emptyList()
+                            cache.createMockKotlinClassifier(nestedClassOrObject, ktFile, classId.createNestedClassId(nestedClassOrObject.nameAsSafeName))
+                        } ?: emptyList()
 
     override val lightClassOriginKind
         get() = LightClassOriginKind.SOURCE

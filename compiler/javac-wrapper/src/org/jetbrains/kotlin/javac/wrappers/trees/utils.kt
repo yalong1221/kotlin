@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.javac.wrappers.symbols.SymbolBasedField
 import org.jetbrains.kotlin.javac.wrappers.symbols.SymbolBasedReferenceAnnotationArgument
 import org.jetbrains.kotlin.load.java.JavaVisibilities
 import org.jetbrains.kotlin.load.java.structure.JavaAnnotation
-import org.jetbrains.kotlin.load.java.structure.JavaClass
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -62,9 +61,6 @@ internal fun JCTree.annotations(): Collection<JCTree.JCAnnotation> = when (this)
     is JCTree.JCTypeParameter -> annotations
     else -> null
 } ?: emptyList<JCTree.JCAnnotation>()
-
-fun JavaClass.computeClassId(): ClassId? =
-        outerClass?.computeClassId()?.createNestedClassId(name) ?: fqName?.let { ClassId.topLevel(it) }
 
 fun Collection<JavaAnnotation>.filterTypeAnnotations(): Collection<JavaAnnotation> {
     val filteredAnnotations = arrayListOf<JavaAnnotation>()
